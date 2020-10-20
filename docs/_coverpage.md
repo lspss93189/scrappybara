@@ -6,5 +6,9 @@
 
 > Natural Language Processing in Python
 
+- Specialized in Computational Semantics
+- Easy to use
+- GPU-accelerated
+
 [GitHub](https://github.com/ericperriard/scrappybara)
 [Getting Started](../README.md)
