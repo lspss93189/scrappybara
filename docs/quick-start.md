@@ -63,6 +63,6 @@ And you should see 2 named-entities with their URI:
 - `Nick Cave`: https://www.wikidata.org/wiki/Q24218
 - `Nick Cave`: https://www.wikidata.org/wiki/Q192668  
 
-As you can see, the first `Nick Cave` links to a performance artist, while the second `Nick Cave` links to a singer.
+As you can see, the first `Nick Cave` links to the performance artist, while the second `Nick Cave` links to the singer.
 
 This example has illustrated the detection of named-entities and their disambiguation.
