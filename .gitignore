@@ -1,0 +1,20 @@
+# Mac
+.DS_Store/
+
+# IDEs
+.idea/
+
+# Compiled code
+__pycache__/
+*.pyc
+
+# Development environment
+dev/
+
+# Data files
+scrappybara/data/
+
+# Distribution
+build/
+dist/
+scrappybara.egg-info/

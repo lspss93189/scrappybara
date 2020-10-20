@@ -1,0 +1,125 @@
+/* COMMON */
+
+body {
+    font-size: 1rem;
+}
+
+a {
+    color: #009993 !important;
+}
+
+a.active {
+    border-bottom: 2px solid #009993 !important;
+}
+
+article p:first-child a {
+    border: 2px solid #00b2ac;
+    box-sizing: border-box;
+    display: inline-block;
+    padding: .4em 1.0rem;
+    text-decoration: none;
+    border-radius: 2rem;
+    color: #00b2ac !important;
+    transition: all .15s ease;
+    margin-bottom: 2rem;
+    letter-spacing: .03rem;
+}
+
+article p:first-child a:hover {
+    color: #009993 !important;
+    border-color: #009993;
+}
+
+.markdown-section blockquote {
+    border-left: 4px solid #00b2ac !important;
+}
+
+th {
+    background: #f0f0f0;
+}
+
+th {
+    border-right-color: #f0f0f0 !important;
+}
+
+th:last-child {
+    border-right-color: #dddddd !important;
+}
+
+th, td {
+    text-align: left !important;
+}
+
+/* NAV BAR */
+
+.app-nav p {
+    color: #009993;
+}
+
+.app-nav p:hover {
+    color: #00b2ac;
+}
+
+.app-nav li ul a:hover {
+    color: #00b2ac !important;
+}
+
+/* COVER PAGE */
+
+.cover.show {
+    background: white !important;
+    border-bottom: solid 1px #EEEEEE;
+}
+
+.cover a {
+    color: #00b2ac !important;
+    border: 1px solid #00b2ac !important;
+}
+
+.cover a:hover {
+    color: #009993 !important;
+    border-color: #009993 !important;
+}
+
+.cover a:last-child {
+    color: white !important;
+    background-color: #00b2ac !important;
+}
+
+.cover a:last-child:hover {
+    background-color: #009993 !important;
+    border-color: #009993 !important;
+}
+
+/* SIDE BAR: flip order Search/Logo */
+
+.search {
+    position: absolute;
+    width: 100%;
+    top: 90px;
+    border-top: 1px solid #EEEEEE;
+    z-index: 10;
+    background-color: #FFFFFF;
+}
+
+.sidebar {
+    overflow: hidden;
+}
+
+.sidebar > h1 {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    width: 100%;
+}
+
+.sidebar-nav {
+    position: absolute;
+    width: 100%;
+    top: 150px;
+    /* Make only the nav scrollable */
+    overflow-y: auto;
+    height: calc(100% - 188px); /* top (150px) + toggle (38px) */
+    box-sizing: content-box;
+    padding-right: 17px;
+}
