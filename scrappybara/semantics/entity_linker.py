@@ -46,8 +46,8 @@ class EntityLinker(object):
         if len(to_disambiguate):
             vector = self.__vectorize(nodes)
             for node, entity_ids in to_disambiguate:
-                cosines = [cosine(vector, self.__id_vector[entity_id]) for entity_id in entity_ids]
-                nodes_eids.append((node, entity_ids[np.argmax(cosines)]))
+                scores = [cosine(vector, self.__id_vector[entity_id]) for entity_id in entity_ids]
+                nodes_eids.append((node, entity_ids[np.argmax(scores)]))
         # Find boundaries
         unique_forms = {node.original for node, _ in nodes_eids}
         form_boundaries = {form: _find_boundaries(form, original_text) for form in unique_forms}

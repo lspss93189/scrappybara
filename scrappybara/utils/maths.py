@@ -9,19 +9,26 @@ def xnor(*bools):
     return result
 
 
-def cosine(vector_1, vector_2):
-    """
-    Calculates cosine similarity between 2 sparse vectors.
+def dot_product(vector_1, vector_2):
+    """Calculates dot product between 2 sparse vectors.
     A sparse vector is a dictionary of idx => non_zero_value.
     """
-    numerator = 0
+    result = 0
     for idx_1, value_1 in vector_1.items():
         if idx_1 in vector_2:
-            numerator += value_1 * vector_2[idx_1]
+            result += value_1 * vector_2[idx_1]
+    return result
+
+
+def cosine(vector_1, vector_2):
+    """Calculates cosine similarity between 2 sparse vectors.
+    A sparse vector is a dictionary of idx => non_zero_value.
+    """
 
     def _norm(_v):
         return np.sqrt(sum([x ** 2 for x in _v.values()]))
 
+    numerator = dot_product(vector_1, vector_2)
     denominator = _norm(vector_1) * _norm(vector_2)
     if denominator == 0:
         return -1
