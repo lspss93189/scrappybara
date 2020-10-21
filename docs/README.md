@@ -4,18 +4,18 @@
 
 ## Overview
 
-Scrappybara provides tools to process unstructured texts written in English.
+Scrappybara provides tools to process texts written in English.
 
-Scrappybara specializes in Computational Semantics: representing the meaning of language and reasoning with it.
+Scrappybara specializes in Computational Semantics: teaching computers to understand human language.
 
 See the [Quick start](quick-start.md) guide to get started.
 
 ## Features
 
 - **Entity Linking**:
-    - Detect named-entities and link them to Wikidata URIs 
-    - The current version can link to over 4,8 million URIs
-    - The current version can disambiguate over 250k named-entities  
+    - Named-entity recognition
+    - Named-entity disambiguation of over 250k forms
+    - Linking to over 4,8 million wikidata URIs
 - **GPU acceleration**:
     - Uses Tensorflow which supports GPU for Deep Learning
     
