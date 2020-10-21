@@ -1,13 +1,13 @@
 import setuptools
 
-from scrappybara.config import VERSION
+from scrappybara.config import APP_VERSION
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name='scrappybara',
-    version=VERSION,
+    version=APP_VERSION,
     author='Eric Perriard',
     author_email='contact@scrappybara.com',
     description='Natural Language Processing',
