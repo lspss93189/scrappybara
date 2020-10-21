@@ -6,8 +6,16 @@
 
 > Python library for Natural Language Processing.
 
-Scrappybara specializes in Computational Semantics for English:
-- Named-entity recognition and disambiguation
+Scrappybara provides tools to process texts written in English.
+
+Scrappybara specializes in Computational Semantics: teaching computers to understand human language.
+
+## Linguistic features
+
+- **Entity Linking**:
+    - Named-entity recognition
+    - Named-entity disambiguation of over 250k forms
+    - Linking to over 4,8 million wikidata URIs
 
 ## Documentation
 
