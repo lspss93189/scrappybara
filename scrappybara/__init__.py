@@ -6,3 +6,5 @@ from scrappybara.preprocessing.sentencizer import Sentencizer
 
 from scrappybara.pipeline.document import Document
 from scrappybara.pipeline.pipeline import Pipeline
+
+from scrappybara.semantics.resources import Entity
