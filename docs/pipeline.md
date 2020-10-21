@@ -16,9 +16,9 @@ Output:
 
 ```terminal
 [
-    ('Louvre Museum', 'https://www.wikidata.org/wiki/Q19675'),
-    ('Paris', 'https://www.wikidata.org/wiki/Q90'),
-    ('France', 'https://www.wikidata.org/wiki/Q142')
+    ((15, 28), 'Louvre Museum', 'https://www.wikidata.org/wiki/Q19675'),
+    ((32, 37), 'Paris', 'https://www.wikidata.org/wiki/Q90'),
+    ((39, 45), 'France', 'https://www.wikidata.org/wiki/Q142')
 ]
 ```
 

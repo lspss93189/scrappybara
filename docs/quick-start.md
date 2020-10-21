@@ -6,7 +6,7 @@
 
 ### Compatibility
 
-Latest Scrappybara `v0.1.3` supports python 3.6-3.9.
+Latest Scrappybara `v0.1.4` supports python 3.6-3.9.
 
 ### Pip install
 
@@ -59,9 +59,9 @@ print(docs[0].entities)
 print(docs[1].entities)
 ```
 
-And you should see 2 named-entities with their URI:
-- `Nick Cave`: https://www.wikidata.org/wiki/Q24218
-- `Nick Cave`: https://www.wikidata.org/wiki/Q192668  
+And you should see 2 named-entities with their boundaries and URI:
+- (29, 38), `Nick Cave`, https://www.wikidata.org/wiki/Q24218
+- (47, 56), `Nick Cave`, https://www.wikidata.org/wiki/Q192668
 
 As you can see, the first `Nick Cave` links to the performance artist, while the second `Nick Cave` links to the singer.
 
