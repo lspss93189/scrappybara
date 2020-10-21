@@ -19,11 +19,8 @@ Scrappybara specializes in Computational Semantics: teaching computers to unders
 
 ## Documentation
 
-Official website:
-- [https://www.scrappybara.com](https://www.scrappybara.com)
-
-Installation guide & example:
-- [https://www.scrappybara.com/#/quick-start](https://www.scrappybara.com/#/quick-start)
+- Official website: [https://www.scrappybara.com](https://www.scrappybara.com)
+- Installation guide & example: [https://www.scrappybara.com/#/quick-start](https://www.scrappybara.com/#/quick-start)
 
 ## Where to ask questions
 
