@@ -12,6 +12,17 @@ class Resource(object):
 
 class Entity(Resource):
 
-    def __init__(self, entity_id):
-        super().__init__('https://www.wikidata.org/wiki/Q%d' % entity_id)
+    def __init__(self, entity_id, form, start_idx, end_idx):
+        self.uri = 'https://www.wikidata.org/wiki/Q%d' % entity_id
+        super().__init__(self.uri)
         self.id = entity_id
+        self.form = form
+        self.start_idx = start_idx
+        self.end_idx = end_idx
+
+    def __repr__(self):
+        return repr((self.boundaries, self.form, self.uri))
+
+    @property
+    def boundaries(self):
+        return self.start_idx, self.end_idx
