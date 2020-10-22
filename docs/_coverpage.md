@@ -6,7 +6,5 @@
 
 > Natural Language Processing in Python
 
-- Teaching computers to understand human language
-
 [GitHub](https://github.com/ericperriard/scrappybara)
 [Getting Started](../README.md)
