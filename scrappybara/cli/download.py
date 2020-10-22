@@ -4,7 +4,7 @@ import zipfile
 
 import tqdm
 
-from scrappybara.config import HOME_DIR, DATA_VERSION
+import scrappybara.config as cfg
 
 
 class DownloadProgressBar(tqdm.tqdm):
@@ -16,16 +16,16 @@ class DownloadProgressBar(tqdm.tqdm):
 
 def download():
     """Downloads & unzips data files according to current version of Scrappybara"""
-    filename = HOME_DIR / 'data.zip'
+    filename = cfg.HOME_DIR / 'data.zip'
     # Dowload
     print('Downloading zip file...')
-    url = 'https://scrappybara.s3.ap-northeast-2.amazonaws.com/data-%s.zip' % DATA_VERSION
+    url = 'https://scrappybara.s3.ap-northeast-2.amazonaws.com/data-%s.zip' % cfg.DATA_VERSION
     with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as progress:
         urllib.request.urlretrieve(url, filename, reporthook=progress.update_to)
     # Unzip
     print('Unzipping files...')
     with zipfile.ZipFile(filename) as zip_file:
-        zip_file.extractall(HOME_DIR)
+        zip_file.extractall(cfg.HOME_DIR)
     # Clean
     print('Deleting zip file...')
     os.remove(filename)

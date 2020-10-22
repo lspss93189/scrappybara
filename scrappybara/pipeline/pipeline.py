@@ -1,3 +1,4 @@
+import sys
 import itertools
 import os
 
@@ -13,6 +14,7 @@ from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.syntax.parser import Parser
 from scrappybara.semantics.entity_linker import EntityLinker, extract_lexeme_bag
 from scrappybara.utils.multithreading import run_multithreads
+from scrappybara.utils.files import txt_file_reader
 
 
 class Pipeline(LabelledSentencePipeline):
@@ -20,7 +22,14 @@ class Pipeline(LabelledSentencePipeline):
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '-'}
 
     def __init__(self, gpu_batch_size=-1):
+        # Check data versioning
+        with txt_file_reader('version.txt') as txt_file:
+            version = txt_file.read()
+        if version != cfg.DATA_VERSION:
+            sys.exit('Wrong version of data: need to run "python -m scrappybara download".')
+        # GPU ?
         self.__gpu_batch_size = gpu_batch_size
+        # Language model
         self.__lm = LanguageModel()
         super().__init__(self.__lm)
         # Sentencizer
