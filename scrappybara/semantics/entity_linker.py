@@ -22,8 +22,7 @@ class EntityLinker(object):
     def __init__(self):
         self.__str_ids = load_pkl_file('entities', 'str_ids.pkl')  # str => list of entity ids
         self.__id_vector = load_pkl_file('entities', 'id_vector.pkl')  # id => vector (dict of idx => count)
-        lexemes = load_pkl_file('entities', 'lexemes.pkl')
-        self.__lexeme_idx = {lexeme: idx for idx, lexeme in enumerate(lexemes)}  # lexeme => idx
+        self.__lexeme_idx_idf = load_pkl_file('entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):
         """Links proper nouns to entity IDs.
@@ -62,8 +61,10 @@ class EntityLinker(object):
     def __vectorize(self, nodes):
         """Returns sparse vector of a text"""
         lexeme_counter = extract_lexeme_bag(nodes)
+        total_count = sum(lexeme_counter.values())
         vector = {}
         for lexeme, count in lexeme_counter.items():
-            if lexeme in self.__lexeme_idx:
-                vector[self.__lexeme_idx[lexeme]] = count
+            if lexeme in self.__lexeme_idx_idf:
+                idx, idf = self.__lexeme_idx_idf[lexeme]
+                vector[idx] = (count / total_count) * idf
         return vector
