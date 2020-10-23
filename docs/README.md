@@ -15,7 +15,7 @@ See the [Quick start](quick-start.md) guide to get started.
 
 - **Entity Linking**:
     - Named-entity recognition
-    - Named-entity disambiguation of over 250k forms
+    - Named-entity disambiguation for over 250k forms
     - Linking to over 4,8 million wikidata URIs
 - **GPU acceleration**:
     - Uses Tensorflow which supports GPU for Deep Learning
