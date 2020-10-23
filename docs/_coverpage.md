@@ -6,5 +6,7 @@
 
 > Natural Language Processing in Python
 
+- Entity Linking
+
 [GitHub](https://github.com/ericperriard/scrappybara)
 [Getting Started](../README.md)
