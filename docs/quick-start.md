@@ -10,18 +10,26 @@ Latest Scrappybara `v0.1.4` supports python 3.6-3.9.
 
 ### Pip install
 
-Scrappybara is using Tensorflow v2 for machine learning.
+Scrappybara is using Tensorflow `v2.3+` for machine learning.
 
 Therefore you will need to install the current release of Tensorflow first:
 
 ```shell
-pip install tensorflow
+pip3 install tensorflow
+pip3 show tensorflow
 ```
 
-Then the current release of Scrappybara:
+You can check the version of Tensorflow by reading the first 2 lines. For example:
+
+```Shell
+Name: tensorflow
+Version: 2.3.1
+```
+
+Then you can install the current release of Scrappybara:
 
 ```shell
-pip install scrappybara
+pip3 install scrappybara
 ```
 
 ### Download resources
@@ -29,7 +37,7 @@ pip install scrappybara
 The final step is to download data and deep-learning models:
 
 ```shell
-python -m scrappybara download
+python3 -m scrappybara download
 ```
 
 ### Optional step
