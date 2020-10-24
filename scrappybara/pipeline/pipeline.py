@@ -26,7 +26,7 @@ class Pipeline(LabelledSentencePipeline):
         with txt_file_reader('version.txt') as txt_file:
             version = txt_file.read()
         if version != cfg.DATA_VERSION:
-            sys.exit('Wrong version of data: need to run "python -m scrappybara download".')
+            sys.exit('Wrong version of data. Please download its newer version: "python3 -m scrappybara download".')
         # GPU ?
         self.__gpu_batch_size = gpu_batch_size
         # Language model
