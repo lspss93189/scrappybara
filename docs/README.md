@@ -7,7 +7,7 @@
 Scrappybara provides tools to process texts written in English.
 
 Scrappybara specializes in Computational Semantics: 
-"constructing and reasoning with meaning representations of natural language expressions".
+*constructing and reasoning with meaning representations of natural language expressions*.
 
 See the [Quick start](quick-start.md) guide to get started.
 
