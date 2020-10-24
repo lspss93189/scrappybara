@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import urllib.request
 import zipfile
@@ -26,9 +27,14 @@ def download():
                  'Please upgrade Scrappybara first: "pip3 install --upgrade scrappybara".')
     # Dowload
     print('Downloading zip file...')
-
     with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc=url.split('/')[-1]) as progress:
         urllib.request.urlretrieve(url, filename, reporthook=progress.update_to)
+    # Delete current data
+    print('Deleting old data if any...')
+    try:
+        shutil.rmtree(cfg.DATA_DIR)
+    except FileNotFoundError:
+        pass
     # Unzip
     print('Unzipping files...')
     with zipfile.ZipFile(filename) as zip_file:

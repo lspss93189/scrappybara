@@ -6,7 +6,7 @@
 
 ### Compatibility
 
-Latest Scrappybara `v0.1.5` supports python 3.6-3.9.
+Latest Scrappybara `v0.1.6` supports python 3.6-3.9.
 
 ### Pip install
 
