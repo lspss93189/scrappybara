@@ -13,7 +13,6 @@ dev/
 
 # Data files
 scrappybara/data/
-scrappybara/resources/
 
 # Distribution
 build/
