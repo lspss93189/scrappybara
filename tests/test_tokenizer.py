@@ -219,8 +219,9 @@ class TestTokenizer(unittest.TestCase):
         self.assertEqual('A/'.split(), _TOKENIZE('A/'))
         self.assertEqual('/B'.split(), _TOKENIZE('/B'))
 
-    def test_emdashes(self):
-        self.assertEqual('- this'.split(), _TOKENIZE('–this'))
+    def test_dashes(self):
+        self.assertEqual('Mon-Khmer'.split(), _TOKENIZE('Mon–Khmer'))
+        self.assertEqual('— this'.split(), _TOKENIZE('—this'))
 
     def test_percentage(self):
         self.assertEqual('%12'.split(), _TOKENIZE('%12'))

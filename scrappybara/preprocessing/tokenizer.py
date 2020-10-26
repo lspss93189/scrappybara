@@ -12,7 +12,7 @@ class Tokenizer(object):
     __re_sanitization = [
         (re.compile(r'[‘’′]'), "'"),
         (re.compile(r'[“”″]'), '"'),
-        (re.compile(r'[–—]+'), ' - '),
+        (re.compile(r'–'), '-'),
     ]
 
     # NON-SPLITABLE TEXT
@@ -79,7 +79,7 @@ class Tokenizer(object):
     # CHARS TO ALWAYS SEGMENT OFF
     # -------------------------------------------------------------------------->
 
-    __re_always_split = re.compile(r'([.?!]{2,}|…+|=+|!+|\?+|"+|;+|\|+|\\+|\(+|\)+|{+|}+|\[+|]+|–+)')
+    __re_always_split = re.compile(r'([.?!]{2,}|…+|=+|!+|\?+|"+|;+|\|+|\\+|\(+|\)+|{+|}+|\[+|]+|—+)')
 
     # DOTS
     # They cause issues because of abbreviations and acronyms.
