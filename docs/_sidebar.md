@@ -6,5 +6,3 @@
     - [Entity](entity.md)
     - [Document](document.md)
     - [Pipeline](pipeline.md)
-    - [Sentencizer](sentencizer.md)
-    - [Tokenizer](tokenizer.md)
