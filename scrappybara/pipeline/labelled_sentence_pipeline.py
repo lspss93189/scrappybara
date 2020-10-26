@@ -11,7 +11,7 @@ from scrappybara.utils.mutables import reverse_dict
 class LabelledSentencePipeline(object):
     """Contains all steps to process a sentence that is already labelled"""
 
-    def __init__(self, language_model):
+    def __init__(self, language_model, form_eids):
         # Irregular lemmatization/inflection
         preterits = load_dict_from_txt_file('english', 'irregular_preterits.txt')
         pps = load_dict_from_txt_file('english', 'irregular_past_participles.txt')
@@ -20,12 +20,12 @@ class LabelledSentencePipeline(object):
         sups = load_dict_from_txt_file('english', 'irregular_superlatives.txt')
         nouns = load_set_from_txt_file('english', 'nouns.txt')
         adjs = load_set_from_txt_file('english', 'adjectives.txt')
-        reversed_pps = reverse_dict(pps)  # Lemma => past participle
+        reversed_pps = reverse_dict(pps)  # lemma => past participle
         # Pipeline steps
         self.__nodify = Nodifier()
+        self.__chunk = Chunker(form_eids)
         self.__lemmatize = Lemmatizer(language_model, adjs, preterits, pps, plurals, comps, sups, reversed_pps)
         self.__fix = Fixer(adjs, nouns)
-        self.__chunk = Chunker()
         self.__canonicalize = Canonicalizer(self.__lemmatize)
 
     def _process_sentence(self, sentence_pack):
@@ -33,14 +33,15 @@ class LabelledSentencePipeline(object):
         tokens, tags, idx_tree = sentence_pack
         # Nofification
         node_dict, node_tree = self.__nodify(tokens, tags, idx_tree)
+        # Chunking
+        node_dict = self.__chunk(node_dict, node_tree)  # removes nodes consumed by chunks
+        node_without_chunk = [n for n in node_dict.values() if n.chunk is None]
         # Lemmatization
-        for node in node_dict.values():
+        for node in node_without_chunk:
             node.lemma, node.suffix = self.__lemmatize(node.standard, node.tag)
         # Fixing
-        for node in node_dict.values():
+        for node in node_without_chunk:
             self.__fix(node, node_tree)
-        # Chunking
-        self.__chunk(node_dict.values(), node_tree)
         # Canonicalization
         for node in node_dict.values():
             self.__canonicalize(node)

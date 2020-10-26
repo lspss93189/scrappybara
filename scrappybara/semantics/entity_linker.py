@@ -19,9 +19,9 @@ def _find_boundaries(form, text):
 
 class EntityLinker(object):
 
-    def __init__(self):
-        self.__str_ids = load_pkl_file('entities', 'str_ids.pkl')  # str => list of entity ids
-        self.__id_vector = load_pkl_file('entities', 'id_vector.pkl')  # id => vector (dict of idx => count)
+    def __init__(self, form_eids):
+        self.__form_eids = form_eids
+        self.__eid_vector = load_pkl_file('entities', 'id_vector.pkl')  # entity id => vector (dict of idx => count)
         self.__lexeme_idx_idf = load_pkl_file('entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):
@@ -32,7 +32,7 @@ class EntityLinker(object):
         nodes_eids = []  # list of tuples (node, entity_id)
         for node in [n for n in nodes if n.tag == Tag.PROPN]:
             try:
-                entity_ids = self.__str_ids[node.canon]
+                entity_ids = self.__form_eids[node.canon]
                 if len(entity_ids) > 1:
                     # Ambiguity
                     to_disambiguate.append((node, entity_ids))
@@ -45,17 +45,17 @@ class EntityLinker(object):
         if len(to_disambiguate):
             vector = self.__vectorize(nodes)
             for node, entity_ids in to_disambiguate:
-                scores = [cosine(vector, self.__id_vector[entity_id]) for entity_id in entity_ids]
+                scores = [cosine(vector, self.__eid_vector[entity_id]) for entity_id in entity_ids]
                 nodes_eids.append((node, entity_ids[np.argmax(scores)]))
         # Find boundaries
-        unique_forms = {node.original for node, _ in nodes_eids}
+        unique_forms = {node.text for node, _ in nodes_eids}
         form_boundaries = {form: _find_boundaries(form, original_text) for form in unique_forms}
         for node, entity_id in sorted(nodes_eids, key=lambda x: x[0].idx):
             try:
-                boundaries = next(form_boundaries[node.original])
+                boundaries = next(form_boundaries[node.text])
             except StopIteration:
                 boundaries = (None, None)
-            node.resource = Entity(entity_id, node.original, *boundaries)
+            node.resource = Entity(entity_id, node.text, *boundaries)
         return [node.resource for node in nodes if type(node.resource) == Entity]
 
     def __vectorize(self, nodes):

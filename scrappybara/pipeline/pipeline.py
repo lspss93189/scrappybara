@@ -1,6 +1,8 @@
-import sys
 import itertools
 import os
+import sys
+
+from scrappybara.utils.files import load_pkl_file
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -19,7 +21,7 @@ from scrappybara.utils.files import txt_file_reader
 
 class Pipeline(LabelledSentencePipeline):
     # Used to split sentences again after they've been sentencized once
-    __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '-'}
+    __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}
 
     def __init__(self, gpu_batch_size=-1):
         # Check data versioning
@@ -29,9 +31,11 @@ class Pipeline(LabelledSentencePipeline):
             sys.exit('Wrong version of data. Please download its newer version: "python3 -m scrappybara download".')
         # GPU ?
         self.__gpu_batch_size = gpu_batch_size
+        # Load data
+        form_eids = load_pkl_file('entities', 'str_ids.pkl')  # form => list of entity ids
         # Language model
         self.__lm = LanguageModel()
-        super().__init__(self.__lm)
+        super().__init__(self.__lm, form_eids)
         # Sentencizer
         self.__sentencize = Sentencizer()
         # Parser
@@ -41,7 +45,7 @@ class Pipeline(LabelledSentencePipeline):
             with tf.device('/CPU:0'):
                 self.__parse = Parser(self.__lm, 128)
         # Entity linker
-        self.__link_entities = EntityLinker()
+        self.__link_entities = EntityLinker(form_eids)
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""
