@@ -5,7 +5,7 @@ from scrappybara.utils.text import LETTERS, UPPERCASE_LETTERS, DIGITS
 class Charset(object):
 
     def __init__(self):
-        self.__filepath = ('models', 'char_codes.pkl')
+        self.__filepath = ('data/models', 'char_codes.pkl')
         self.__char_code = None  # Char => code
         self.__unk_code = None  # Positive integer
 

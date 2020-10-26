@@ -54,10 +54,10 @@ class _SentenceModel(object):
         return max(history.history[metric]) * 100
 
     def _save(self, filename):
-        self._model.save_weights(str(file_path('models', filename)))
+        self._model.save_weights(file_path('data/models', filename))
 
     def _load(self, filename):
-        self._model.load_weights(str(file_path('models', filename)))
+        self._model.load_weights(file_path('data/models', filename))
 
 
 class PTagsModel(_SentenceModel):

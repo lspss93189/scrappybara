@@ -22,7 +22,7 @@ class LanguageModel(object):
         # Load ngrams
         for idx, min_count in enumerate(self.__min_counts):
             order = idx + 1
-            for text, count, proba in load_pkl_file('langmodel', ('%d_grams.pkl' % order)):
+            for text, count, proba in load_pkl_file('data/langmodel', ('%d_grams.pkl' % order)):
                 if count >= min_count:
                     self.__ngrams_details[text] = (count, proba, math.log(proba))
         # Build next_token dict

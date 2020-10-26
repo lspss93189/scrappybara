@@ -20,7 +20,6 @@ NB_PROCESSES = multiprocessing.cpu_count()
 
 ENCODING = 'utf-8'
 HOME_DIR = pathlib.Path(__file__).parent
-DATA_DIR = HOME_DIR / 'data'
 
 # ###############################################################################
 # MACHINE LEARNING

@@ -21,8 +21,8 @@ class EntityLinker(object):
 
     def __init__(self, form_eids):
         self.__form_eids = form_eids
-        self.__eid_vector = load_pkl_file('entities', 'id_vector.pkl')  # entity id => vector (dict of idx => count)
-        self.__lexeme_idx_idf = load_pkl_file('entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
+        self.__eid_vector = load_pkl_file('data/entities', 'id_vector.pkl')  # entity id => sparse vector (dict)
+        self.__lexeme_idx_idf = load_pkl_file('data/entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):
         """Links proper nouns to entity IDs.

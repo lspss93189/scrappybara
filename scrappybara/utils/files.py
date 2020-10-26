@@ -9,7 +9,7 @@ def file_path(*args):
     The last arg is the actual filename.
       e.g. if the file is located at "[path_to_data]/sub_folder/file.txt", call file_path('sub_folder', 'file.txt')
     """
-    path = cfg.DATA_DIR
+    path = cfg.HOME_DIR
     for arg in args:
         path /= arg
     return path

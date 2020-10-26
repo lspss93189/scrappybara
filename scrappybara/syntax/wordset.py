@@ -10,7 +10,7 @@ class Wordset(object):
     def __init__(self, language_model):
         self.__lm = language_model
         self.__standardize = Standardizer(language_model)
-        self.__filepath = ('models', 'word_vectors.pkl')
+        self.__filepath = ('data/models', 'word_vectors.pkl')
         self.__word_vector = None  # word => vector
         self.__zero_vector = np.zeros(cfg.WORD_VECTOR_SIZE)
 

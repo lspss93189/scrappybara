@@ -5,7 +5,7 @@ from scrappybara.normalization.inflector import Inflector
 from scrappybara.utils.files import load_dict_from_txt_file
 from scrappybara.utils.mutables import reverse_dict
 
-_PP = load_dict_from_txt_file('english', 'irregular_past_participles.txt')
+_PP = load_dict_from_txt_file('data/english', 'irregular_past_participles.txt')
 _REVERSED_PP = reverse_dict(_PP)
 
 _INFLECT = Inflector(LanguageModel(), _REVERSED_PP)

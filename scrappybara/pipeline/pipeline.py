@@ -25,14 +25,14 @@ class Pipeline(LabelledSentencePipeline):
 
     def __init__(self, gpu_batch_size=-1):
         # Check data versioning
-        with txt_file_reader('version.txt') as txt_file:
+        with txt_file_reader('data', 'version.txt') as txt_file:
             version = txt_file.read()
         if version != cfg.DATA_VERSION:
             sys.exit('Wrong version of data. Please download its newer version: "python3 -m scrappybara download".')
         # GPU ?
         self.__gpu_batch_size = gpu_batch_size
         # Load data
-        form_eids = load_pkl_file('entities', 'str_ids.pkl')  # form => list of entity ids
+        form_eids = load_pkl_file('data/entities', 'str_ids.pkl')  # form => list of entity ids
         # Language model
         self.__lm = LanguageModel()
         super().__init__(self.__lm, form_eids)

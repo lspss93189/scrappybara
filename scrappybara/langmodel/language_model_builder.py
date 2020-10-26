@@ -67,5 +67,5 @@ class LanguageModelBuilder(object):
     @staticmethod
     def __write_ngram_file(order, ngrams):
         ngram_tuples = [(ngram.text, ngram.count, ngram.proba) for ngram in ngrams if ngram.proba > 0.0]
-        save_pkl_file(ngram_tuples, 'langmodel', '%d_grams.pkl' % order)
+        save_pkl_file(ngram_tuples, 'data/langmodel', '%d_grams.pkl' % order)
         print('Wrote {:,} {}-grams'.format(len(ngrams), order))
