@@ -51,7 +51,7 @@ def load_set_from_txt_file(path):
         return {line.strip() for line in txt_file}
 
 
-def load_dict_from_txt_file(path):
+def load_dict_from_txt_file(path, cast_value=str):
     """Opens a txt file and loads tab-separated columns into a dictionary"""
     with txt_file_reader(path) as txt_file:
-        return {key: value for key, value in [line.strip().split('\t') for line in txt_file]}
+        return {key: cast_value(value) for key, value in [line.strip().split('\t') for line in txt_file]}

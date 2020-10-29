@@ -20,6 +20,7 @@ NB_PROCESSES = multiprocessing.cpu_count()
 
 ENCODING = 'utf-8'
 HOME_DIR = pathlib.Path(__file__).parent
+REPORTS_DIR = HOME_DIR / 'reports'
 DATA_DIR = HOME_DIR / 'data'
 
 # ###############################################################################
