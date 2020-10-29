@@ -1,5 +1,6 @@
 import unittest
 
+import scrappybara.config as cfg
 from scrappybara.langmodel.language_model import LanguageModel
 from scrappybara.normalization.lemmatizer import Lemmatizer
 from scrappybara.normalization.suffixes import Suffix
@@ -7,12 +8,12 @@ from scrappybara.syntax.tags import Tag
 from scrappybara.utils.files import load_dict_from_txt_file, load_set_from_txt_file
 from scrappybara.utils.mutables import reverse_dict
 
-_ADJS = load_set_from_txt_file('data/english', 'adjectives.txt')
-_PRET = load_dict_from_txt_file('data/english', 'irregular_preterits.txt')
-_PP = load_dict_from_txt_file('data/english', 'irregular_past_participles.txt')
-_PLUR = load_dict_from_txt_file('data/english', 'irregular_plurals.txt')
-_COMP = load_dict_from_txt_file('data/english', 'irregular_comparatives.txt')
-_SUP = load_dict_from_txt_file('data/english', 'irregular_superlatives.txt')
+_ADJS = load_set_from_txt_file(cfg.DATA_DIR / 'english' / 'adjectives.txt')
+_PRET = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_preterits.txt')
+_PP = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_past_participles.txt')
+_PLUR = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_plurals.txt')
+_COMP = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_comparatives.txt')
+_SUP = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_superlatives.txt')
 _REVERSED_PP = reverse_dict(_PP)
 
 _LEMMATIZE = Lemmatizer(LanguageModel(), _ADJS, _PRET, _PP, _PLUR, _COMP, _SUP, _REVERSED_PP)

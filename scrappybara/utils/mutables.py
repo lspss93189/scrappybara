@@ -21,17 +21,17 @@ def make_batches(items, nb_items_per_batch):
 
 def append_to_dict_list(dic, key, item):
     """Appends an item to a list in a dictionary"""
-    if key in dic:
+    try:
         dic[key].append(item)
-    else:
+    except KeyError:
         dic[key] = [item]
 
 
 def add_in_dict_set(dic, key, item):
     """Adds an item to a set in a dictionary"""
-    if key in dic:
+    try:
         dic[key].add(item)
-    else:
+    except KeyError:
         dic[key] = {item}
 
 

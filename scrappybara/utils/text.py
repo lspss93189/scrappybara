@@ -8,6 +8,8 @@ DIGITS = set('0123456789')
 UPPERCASE_LETTERS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 _RE_ONLY_LETTERS = re.compile(r'[a-zA-Z]+')
+_RE_ONLY_DIGITS = re.compile(r'\d+')
+_RE_SPECIAL_CHAR = re.compile(r'[`~!@#$%^&*()\-_=+\[\]{}\\|;:\'",.<>/?]')
 
 
 # ###############################################################################
@@ -15,7 +17,7 @@ _RE_ONLY_LETTERS = re.compile(r'[a-zA-Z]+')
 # ###############################################################################
 
 
-def starts_with_uppercase_letter(token: str) -> bool:
+def starts_with_uppercase_letter(token):
     return token[0] in UPPERCASE_LETTERS
 
 
@@ -23,12 +25,20 @@ def ends_with_consonant(token):
     return token[-1] in CONSONANTS
 
 
-def has_only_letters(token: str) -> bool:
+def has_only_letters(token):
     return bool(re.fullmatch(_RE_ONLY_LETTERS, token))
 
 
-def has_only_lowercase_letters(token: str) -> bool:
+def has_only_lowercase_letters(token):
     return bool(re.fullmatch(_RE_ONLY_LETTERS, token))
+
+
+def has_only_digits(token):
+    return bool(re.fullmatch(_RE_ONLY_DIGITS, token))
+
+
+def has_special_char(token):
+    return bool(re.findall(_RE_SPECIAL_CHAR, token))
 
 
 def token_start(token, ending, start_min_length):

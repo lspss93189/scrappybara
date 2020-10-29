@@ -10,7 +10,7 @@ class Wordset(object):
     def __init__(self, language_model):
         self.__lm = language_model
         self.__standardize = Standardizer(language_model)
-        self.__filepath = ('data/models', 'word_vectors.pkl')
+        self.__filepath = cfg.DATA_DIR / 'models' / 'word_vectors.pkl'
         self.__word_vector = None  # word => vector
         self.__zero_vector = np.zeros(cfg.WORD_VECTOR_SIZE)
 
@@ -26,7 +26,7 @@ class Wordset(object):
             return self.__zero_vector
 
     def load(self):
-        self.__word_vector = load_pkl_file(*self.__filepath)
+        self.__word_vector = load_pkl_file(self.__filepath)
         return self
 
     def save(self, wordvec_folder):
@@ -40,4 +40,4 @@ class Wordset(object):
                 wordvec = values[1:]
                 if self.__lm.has_ngram(word):
                     word_vector[word] = np.asarray(wordvec, dtype=np.float32)
-        save_pkl_file(word_vector, *self.__filepath)
+        save_pkl_file(word_vector, self.__filepath)

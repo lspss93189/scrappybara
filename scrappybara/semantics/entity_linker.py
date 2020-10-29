@@ -2,6 +2,7 @@ import collections
 import re
 import numpy as np
 
+import scrappybara.config as cfg
 from scrappybara.semantics.resources import Entity
 from scrappybara.syntax.tags import Tag
 from scrappybara.utils.files import load_pkl_file
@@ -21,8 +22,8 @@ class EntityLinker(object):
 
     def __init__(self, form_eids):
         self.__form_eids = form_eids
-        self.__eid_vector = load_pkl_file('data/entities', 'id_vector.pkl')  # entity id => sparse vector (dict)
-        self.__lexeme_idx_idf = load_pkl_file('data/entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
+        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'id_vector.pkl')  # entity id => dict sparce vect
+        self.__lexeme_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):
         """Links proper nouns to entity IDs.

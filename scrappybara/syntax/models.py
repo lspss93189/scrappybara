@@ -5,7 +5,6 @@ import scrappybara.config as cfg
 from scrappybara.syntax.dependencies import NB_DEPS
 from scrappybara.syntax.tags import NB_TAGS
 from scrappybara.syntax.transitions import Trans
-from scrappybara.utils.files import file_path
 
 
 class _SentenceModel(object):
@@ -54,10 +53,10 @@ class _SentenceModel(object):
         return max(history.history[metric]) * 100
 
     def _save(self, filename):
-        self._model.save_weights(file_path('data/models', filename))
+        self._model.save_weights(cfg.DATA_DIR / 'models' / filename)
 
     def _load(self, filename):
-        self._model.load_weights(file_path('data/models', filename))
+        self._model.load_weights(cfg.DATA_DIR / 'models' / filename)
 
 
 class PTagsModel(_SentenceModel):
