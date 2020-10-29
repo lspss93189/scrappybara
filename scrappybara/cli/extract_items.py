@@ -54,7 +54,6 @@ def extract_items(resource_dir):
                 items.append(json.dumps(small_item))
                 if len(items) % 100 == 0:
                     print('\r{:,}'.format(len(items)), end='')
-                    break
     with txt_file_writer(cfg.REPORTS_DIR / 'extract_items' / 'items.txt') as report:
         for item in items:
             report.write('%s\n' % item)
