@@ -2,9 +2,11 @@ if __name__ == "__main__":
     import sys
     from scrappybara.cli.download import download
     from scrappybara.cli.extract_items import extract_items
+    from scrappybara.cli.extract_classes import extract_classes
 
     commands = {
         'download': download,
+        'extract_classes': extract_classes,
         'extract_items': extract_items,
     }
 
