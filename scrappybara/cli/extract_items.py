@@ -1,6 +1,7 @@
 import json
 import pathlib
 
+import scrappybara.config as cfg
 from scrappybara.utils.files import bz2_file_reader, txt_file_writer
 from scrappybara.utils.timer import Timer
 
@@ -51,7 +52,7 @@ def extract_items(resource_dir):
                 items.append(json.dumps(small_item))
                 if len(items) % 100 == 0:
                     print('\r{:,}'.format(len(items)), end='')
-    with txt_file_writer('reports/extract_items/items.txt') as report:
+    with txt_file_writer(cfg.HOME_DIR / 'reports' / 'extract_items' / 'items.txt') as report:
         for item in items:
             report.write('%s\n' % item)
     print('\n')
