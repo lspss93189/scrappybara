@@ -57,5 +57,4 @@ def extract_classes(resources_dir):
             report.write('%d\t%s\n' % (eid, str(types)))
     print('{:,} entities assigned in {}'.format(len(eid_cids), timer.lap_time))
     print()
-    # All done
     print('All done in {}'.format(timer.total_time))
