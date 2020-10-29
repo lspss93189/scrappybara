@@ -11,9 +11,9 @@ def extract_items(resource_dir):
     print('Extracting items...')
     timer = Timer()
     items = []
-    with bz2_file_reader(pathlib.Path(resource_dir) / 'latest-all.json.bz2') as bz2_file:
+    with bz2_file_reader(pathlib.Path(resource_dir) / 'latest-all.json.bz2') as data:
         properties = {'P31': 'instance_of', 'P279': 'subclass_of', 'P1709': 'equivalent_class'}
-        for line in bz2_file:
+        for line in data:
             line = line.strip()
             if line.startswith('{') and line.endswith('},'):
                 item = json.loads(line[:-1])
@@ -44,6 +44,8 @@ def extract_items(resource_dir):
                     for claim in item['claims'][code]:
                         try:
                             props[code][claim['rank']].append(claim['mainsnak']['datavalue']['value']['numeric-id'])
+                        except TypeError:
+                            props[code][claim['rank']].append(claim['mainsnak']['datavalue']['value'])
                         except KeyError:
                             continue
                 for code, prop in properties.items():
@@ -52,7 +54,8 @@ def extract_items(resource_dir):
                 items.append(json.dumps(small_item))
                 if len(items) % 100 == 0:
                     print('\r{:,}'.format(len(items)), end='')
-    with txt_file_writer(cfg.HOME_DIR / 'reports' / 'extract_items' / 'items.txt') as report:
+                    break
+    with txt_file_writer(cfg.REPORTS_DIR / 'extract_items' / 'items.txt') as report:
         for item in items:
             report.write('%s\n' % item)
     print('\n')
