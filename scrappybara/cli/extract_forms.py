@@ -253,8 +253,8 @@ def extract_forms(resources_dir):
                 report.write('%s\t%s\n' % (form, str(titles)))
     print('{:,} forms extracted from links in {}'.format(len(form_titles), timer.lap_time))
     print()
-    # All done
+
+    # ALL DONE
+    # -------------------------------------------------------------------------->
+
     print('All done in {}'.format(timer.total_time))
-
-
-extract_forms('/media/data/wikipedia')

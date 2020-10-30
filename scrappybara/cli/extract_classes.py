@@ -36,7 +36,7 @@ def extract_classes(resources_dir):
 
     print('Extracting class IDs...')
     with txt_file_reader(pathlib.Path(resources_dir) / 'yago-wd-schema.nt') as data:
-        uri_cid = {}  # Schema URI => class ID
+        uri_cid = {}  # schema URI => class ID
         class_id = 1
         for line in data:
             class_uri, _, _, _ = line.strip().split('\t')
@@ -66,4 +66,8 @@ def extract_classes(resources_dir):
             report.write('%d\t%s\n' % (eid, str(types)))
     print('{:,} entities assigned in {}'.format(len(eid_cids), timer.lap_time))
     print()
+
+    # ALL DONE
+    # -------------------------------------------------------------------------->
+
     print('All done in {}'.format(timer.total_time))
