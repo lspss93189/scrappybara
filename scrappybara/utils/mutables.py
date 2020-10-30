@@ -35,6 +35,15 @@ def add_in_dict_set(dic, key, item):
         dic[key] = {item}
 
 
+def update_dict_set(main_dic, dic):
+    """Update dictionary key=>set()"""
+    for key, item_set in dic.items():
+        try:
+            main_dic[key] |= item_set
+        except KeyError:
+            main_dic[key] = item_set
+
+
 def append_in_dict_dict_list(dic, key1, key2, item):
     """Appends an item to a list in a dictionary of a dictionary"""
     if key1 in dic:
@@ -47,4 +56,5 @@ def append_in_dict_dict_list(dic, key1, key2, item):
 
 
 def reverse_dict(dic):
+    """Reverse simple dictionary of key=>value"""
     return {v: k for k, v in dic.items()}

@@ -45,13 +45,13 @@ def save_pkl_file(python_object, path):
     pickle.dump(python_object, open(path, 'wb'))
 
 
-def load_set_from_txt_file(path):
+def load_set_from_txt_file(path, value_type=str):
     """Opens a txt file & loads each line into a set"""
     with txt_file_reader(path) as txt_file:
-        return {line.strip() for line in txt_file}
+        return {value_type(line.strip()) for line in txt_file}
 
 
-def load_dict_from_txt_file(path, cast_value=str):
+def load_dict_from_txt_file(path, key_type=str, value_type=str):
     """Opens a txt file and loads tab-separated columns into a dictionary"""
     with txt_file_reader(path) as txt_file:
-        return {key: cast_value(value) for key, value in [line.strip().split('\t') for line in txt_file]}
+        return {key_type(key): value_type(value) for key, value in [line.strip().split('\t') for line in txt_file]}

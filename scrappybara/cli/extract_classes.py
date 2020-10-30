@@ -12,7 +12,10 @@ def extract_classes(resources_dir):
     reports_dir = cfg.REPORTS_DIR / 'extract_classes'
     timer = Timer()
     print()
-    # Extract URIs and their entity ID
+
+    # EXTRACT URIs & THEIR ENTITY ID
+    # -------------------------------------------------------------------------->
+
     print('Extracting entity IDs...')
     re_wikidata_uri = re.compile(r'<http://www.wikidata.org/entity/Q(\d+)>')
     with txt_file_reader(pathlib.Path(resources_dir) / 'yago-wd-sameAs.nt') as data:
@@ -27,7 +30,10 @@ def extract_classes(resources_dir):
             report.write('%s\t%s\n' % (yago_uri, eid))
     print('{:,} URIs extracted in {}'.format(len(yago_eid), timer.lap_time))
     print()
-    # Extract class IDs
+
+    # GENERATE CLASS IDs
+    # -------------------------------------------------------------------------->
+
     print('Extracting class IDs...')
     with txt_file_reader(pathlib.Path(resources_dir) / 'yago-wd-schema.nt') as data:
         uri_cid = {}  # Schema URI => class ID
@@ -43,7 +49,10 @@ def extract_classes(resources_dir):
             report.write('%s\t%d\n' % (uri, cid))
     print('Extracted {:,} classes in {}'.format(len(uri_cid), timer.lap_time))
     print()
-    # Extract "instance_of" relations
+
+    # EXTRACT INSTANCE_OF RELATIONS
+    # -------------------------------------------------------------------------->
+
     print('Extracting types...')
     with txt_file_reader(pathlib.Path(resources_dir) / 'yago-wd-simple-types.nt') as data:
         eid_cids = {}  # entity id => list of class ids
