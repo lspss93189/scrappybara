@@ -124,7 +124,7 @@ def extract_forms(resources_dir):
     print('{:,} titles extracted in {}'.format(len(titles), timer.lap_time))
     print()
 
-    # LINKING TITLES TO IDs
+    # LINK TITLES TO IDs
     # -------------------------------------------------------------------------->
 
     report_file = 'form_eids.txt.txt'
@@ -146,7 +146,7 @@ def extract_forms(resources_dir):
     print('{:,} titles have been mapped to an entity ID'.format(len(eid_title), timer.lap_time))
     print()
 
-    # PREPARING FORM EXTRACTION
+    # PREPARE FORMS EXTRACTION
     # -------------------------------------------------------------------------->
 
     form_eids = {}  # form => set of entity IDs
@@ -258,3 +258,6 @@ def extract_forms(resources_dir):
     # -------------------------------------------------------------------------->
 
     print('All done in {}'.format(timer.total_time))
+
+
+extract_forms('/media/data/wikipedia')
