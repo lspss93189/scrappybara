@@ -75,24 +75,6 @@ def _extract_titles(filepath):
     return titles
 
 
-def _extract_forms_from_links(filepath_title_eid):
-    filepath, title_eid = filepath_title_eid
-    # Patterns
-    re_link = re.compile(r'\[\[([^\n]+?)\|([^\n]+?)]]')
-    # Read file
-    form_title_eid_titles = {}  # (form, eid) => set of titles
-    with bz2_file_bytes_reader(filepath) as data:
-        for _, elem in etree.iterparse(data):
-            title, _, text = _extract_article(elem)
-            if title and text:
-                for match in re.finditer(re_link, text):
-                    target = match.group(1)
-                    if target in title_eid:
-                        add_in_dict_set(form_title_eid_titles,
-                                        (_convert_to_form(match.group(2)), target, title_eid[target]), title)
-    return form_title_eid_titles
-
-
 # ###############################################################################
 # MAIN
 # ###############################################################################
