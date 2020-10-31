@@ -6,7 +6,7 @@ import pathlib
 # ###############################################################################
 
 APP_VERSION = '0.1.6'
-DATA_VERSION = '0.2.0'
+DATA_VERSION = '0.3.0'
 
 # ###############################################################################
 # MULTITHREADING
@@ -20,6 +20,7 @@ NB_PROCESSES = multiprocessing.cpu_count()
 
 ENCODING = 'utf-8'
 HOME_DIR = pathlib.Path(__file__).parent
+REPORTS_DIR = HOME_DIR / 'reports'
 DATA_DIR = HOME_DIR / 'data'
 
 # ###############################################################################

@@ -2,6 +2,7 @@ import collections
 import re
 import numpy as np
 
+import scrappybara.config as cfg
 from scrappybara.semantics.resources import Entity
 from scrappybara.syntax.tags import Tag
 from scrappybara.utils.files import load_pkl_file
@@ -20,9 +21,9 @@ def _find_boundaries(form, text):
 class EntityLinker(object):
 
     def __init__(self, form_eids):
-        self.__form_eids = form_eids
-        self.__eid_vector = load_pkl_file('entities', 'id_vector.pkl')  # entity id => vector (dict of idx => count)
-        self.__lexeme_idx_idf = load_pkl_file('entities', 'lexemes.pkl')  # lexeme => (idx, idf score)
+        self.__form_eids = form_eids  # form => set of entity IDs
+        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
+        self.__lexeme_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):
         """Links proper nouns to entity IDs.
@@ -32,21 +33,21 @@ class EntityLinker(object):
         nodes_eids = []  # list of tuples (node, entity_id)
         for node in [n for n in nodes if n.tag == Tag.PROPN]:
             try:
-                entity_ids = self.__form_eids[node.canon]
-                if len(entity_ids) > 1:
+                eids = self.__form_eids[node.canon]  # Set of entity IDs
+                if len(eids) > 1:
                     # Ambiguity
-                    to_disambiguate.append((node, entity_ids))
-                elif len(entity_ids) == 1:
+                    to_disambiguate.append((node, eids))
+                elif len(eids) == 1:
                     # No ambiguity
-                    nodes_eids.append((node, entity_ids[0]))
+                    nodes_eids.append((node, next(iter(eids))))
             except (KeyError, IndexError):
                 continue
         # Disambiguate
         if len(to_disambiguate):
             vector = self.__vectorize(nodes)
-            for node, entity_ids in to_disambiguate:
-                scores = [cosine(vector, self.__eid_vector[entity_id]) for entity_id in entity_ids]
-                nodes_eids.append((node, entity_ids[np.argmax(scores)]))
+            for node, eids in to_disambiguate:
+                scores = [cosine(vector, self.__eid_vector[entity_id]) for entity_id in eids]
+                nodes_eids.append((node, eids[np.argmax(scores)]))
         # Find boundaries
         unique_forms = {node.text for node, _ in nodes_eids}
         form_boundaries = {form: _find_boundaries(form, original_text) for form in unique_forms}

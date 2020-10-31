@@ -32,7 +32,7 @@ def download():
     # Delete current data
     print('Deleting old data if any...')
     try:
-        shutil.rmtree(cfg.DATA_DIR)
+        shutil.rmtree(cfg.HOME_DIR / 'data')
     except FileNotFoundError:
         pass
     # Unzip

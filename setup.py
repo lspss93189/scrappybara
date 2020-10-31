@@ -26,7 +26,7 @@ setuptools.setup(
         'scrappybara.utils',
     ],
     include_package_data=True,
-    install_requires=['tqdm', 'numpy', 'tensorflow'],
+    install_requires=['lxml', 'tqdm', 'numpy', 'tensorflow'],
     python_requires='>=3.6',
     classifiers=[
         'Programming Language :: Python :: 3',

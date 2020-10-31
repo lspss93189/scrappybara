@@ -1,3 +1,4 @@
+import scrappybara.config as cfg
 from scrappybara.normalization.canonicalizer import Canonicalizer
 from scrappybara.normalization.lemmatizer import Lemmatizer
 from scrappybara.syntax.chunker import Chunker
@@ -13,13 +14,13 @@ class LabelledSentencePipeline(object):
 
     def __init__(self, language_model, form_eids):
         # Irregular lemmatization/inflection
-        preterits = load_dict_from_txt_file('english', 'irregular_preterits.txt')
-        pps = load_dict_from_txt_file('english', 'irregular_past_participles.txt')
-        plurals = load_dict_from_txt_file('english', 'irregular_plurals.txt')
-        comps = load_dict_from_txt_file('english', 'irregular_comparatives.txt')
-        sups = load_dict_from_txt_file('english', 'irregular_superlatives.txt')
-        nouns = load_set_from_txt_file('english', 'nouns.txt')
-        adjs = load_set_from_txt_file('english', 'adjectives.txt')
+        preterits = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_preterits.txt')
+        pps = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_past_participles.txt')
+        plurals = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_plurals.txt')
+        comps = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_comparatives.txt')
+        sups = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_superlatives.txt')
+        nouns = load_set_from_txt_file(cfg.DATA_DIR / 'english' / 'nouns.txt')
+        adjs = load_set_from_txt_file(cfg.DATA_DIR / 'english' / 'adjectives.txt')
         reversed_pps = reverse_dict(pps)  # lemma => past participle
         # Pipeline steps
         self.__nodify = Nodifier()
