@@ -33,21 +33,21 @@ class EntityLinker(object):
         nodes_eids = []  # list of tuples (node, entity_id)
         for node in [n for n in nodes if n.tag == Tag.PROPN]:
             try:
-                entity_ids = self.__form_eids[node.canon]
-                if len(entity_ids) > 1:
+                eids = self.__form_eids[node.canon]  # Set of entity IDs
+                if len(eids) > 1:
                     # Ambiguity
-                    to_disambiguate.append((node, entity_ids))
-                elif len(entity_ids) == 1:
+                    to_disambiguate.append((node, eids))
+                elif len(eids) == 1:
                     # No ambiguity
-                    nodes_eids.append((node, entity_ids[0]))
+                    nodes_eids.append((node, next(iter(eids))))
             except (KeyError, IndexError):
                 continue
         # Disambiguate
         if len(to_disambiguate):
             vector = self.__vectorize(nodes)
-            for node, entity_ids in to_disambiguate:
-                scores = [cosine(vector, self.__eid_vector[entity_id]) for entity_id in entity_ids]
-                nodes_eids.append((node, entity_ids[np.argmax(scores)]))
+            for node, eids in to_disambiguate:
+                scores = [cosine(vector, self.__eid_vector[entity_id]) for entity_id in eids]
+                nodes_eids.append((node, eids[np.argmax(scores)]))
         # Find boundaries
         unique_forms = {node.text for node, _ in nodes_eids}
         form_boundaries = {form: _find_boundaries(form, original_text) for form in unique_forms}
