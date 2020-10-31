@@ -25,8 +25,8 @@ class Canonicalizer(object):
 
     def __call__(self, node):
         """Registers canonical representation of a node in place"""
-        if node.chunk:
-            node.canon = node.chunk
+        if node.form:
+            node.canon = node.form
             return
         if node.tag == Tag.PRON and node.lemma in self.__personal_pronouns_object_to_subject:
             node.canon = self.__personal_pronouns_object_to_subject[node.lemma]

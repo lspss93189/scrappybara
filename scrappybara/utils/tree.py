@@ -63,8 +63,8 @@ class Tree:
 
         def _recurse_add_descendants(_parent):
             try:
-                _label_children = self.__children[_parent]
-                for _child in _label_children[label]:
+                _children = self.__children[_parent]
+                for _child in _children[label]:
                     nodes.append(_child)
                     _recurse_add_descendants(_child)
             except KeyError:

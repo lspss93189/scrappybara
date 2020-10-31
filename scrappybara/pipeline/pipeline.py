@@ -2,8 +2,6 @@ import itertools
 import os
 import sys
 
-from scrappybara.utils.files import load_pkl_file
-
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import tensorflow as tf
@@ -14,7 +12,6 @@ from scrappybara.pipeline.document import Document
 from scrappybara.pipeline.labelled_sentence_pipeline import LabelledSentencePipeline
 from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.syntax.parser import Parser
-from scrappybara.semantics.entity_linker import EntityLinker, extract_lexeme_bag
 from scrappybara.utils.multithreading import run_multithreads
 from scrappybara.utils.files import txt_file_reader
 
@@ -31,11 +28,9 @@ class Pipeline(LabelledSentencePipeline):
             sys.exit('Wrong version of data. Please download its newer version: "python3 -m scrappybara download".')
         # GPU ?
         self.__gpu_batch_size = gpu_batch_size
-        # Load data
-        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
         # Language model
         self.__lm = LanguageModel()
-        super().__init__(self.__lm, form_eids)
+        super().__init__(self.__lm)
         # Sentencizer
         self.__sentencize = Sentencizer()
         # Parser
@@ -45,7 +40,7 @@ class Pipeline(LabelledSentencePipeline):
             with tf.device('/CPU:0'):
                 self.__parse = Parser(self.__lm, 128)
         # Entity linker
-        self.__link_entities = EntityLinker(form_eids)
+        self.__link_entities = None
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""
@@ -60,10 +55,10 @@ class Pipeline(LabelledSentencePipeline):
         docs = []
         for idx, start_end in enumerate(sent_ranges):
             start, end = start_end
-            # Link resources
-            nodes = [node for node_dict in node_dicts[start:end] for node in node_dict.values()]
-            entities = self.__link_entities(nodes, texts[idx])
-            docs.append(Document(entities))
+            # Link entities
+            # nodes = [node for node_dict in node_dicts[start:end] for node in node_dict.values()]
+            # entities = self.__link_entities(nodes, texts[idx])
+            # docs.append(Document(entities))
         return docs
 
     def __extract_sentences(self, texts):
@@ -96,10 +91,10 @@ class Pipeline(LabelledSentencePipeline):
 
     def __process_tokens(self, token_lists):
         """Proxy for both production __call__ and testing"""
-        tags, node_trees = self.__parse(token_lists)
-        sent_packs = list(zip(token_lists, tags, node_trees))
+        tags, idx_trees = self.__parse(token_lists)
+        sent_packs = list(zip(token_lists, tags, idx_trees))
         node_dicts = run_multithreads(sent_packs, self._process_sentence, cfg.NB_PROCESSES)
-        return tags, node_trees, node_dicts
+        return tags, idx_trees, node_dicts
 
     # INTERNAL USE
     # -------------------------------------------------------------------------->
@@ -120,11 +115,5 @@ class Pipeline(LabelledSentencePipeline):
             tokens = [input_sentence]
         else:
             tokens = self.__sentencize(input_sentence)
-        tags, trees, node_dicts = self.__process_tokens(tokens)
-        return tokens[0], tags[0], trees[0], node_dicts[0]
-
-    def _test_process(self, text):
-        """To debug every step, except semantics"""
-        token_lists = self.__sentencize(text)
-        tags, trees, node_dicts = self.__process_tokens(token_lists)
-        return token_lists[0], tags[0], trees[0], node_dicts[0]
+        tags, idx_trees, node_dicts = self.__process_tokens(tokens)
+        return tokens[0], tags[0], idx_trees[0], node_dicts[0]

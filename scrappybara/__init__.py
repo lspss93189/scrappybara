@@ -4,4 +4,4 @@ import scrappybara as sb
 from scrappybara.pipeline.document import Document
 from scrappybara.pipeline.pipeline import Pipeline
 
-from scrappybara.semantics.resources import Entity
+from scrappybara.semantics.entities import Entity

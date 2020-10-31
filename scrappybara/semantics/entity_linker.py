@@ -3,7 +3,7 @@ import re
 import numpy as np
 
 import scrappybara.config as cfg
-from scrappybara.semantics.resources import Entity
+from scrappybara.semantics.entities import Entity
 from scrappybara.syntax.tags import Tag
 from scrappybara.utils.files import load_pkl_file
 from scrappybara.utils.maths import cosine
@@ -18,7 +18,7 @@ def _find_boundaries(form, text):
     return iter([match.span() for match in re.finditer(form, text)])
 
 
-class EntityLinker(object):
+class EntityRecognizer(object):
 
     def __init__(self, form_eids):
         self.__form_eids = form_eids  # form => set of entity IDs
@@ -56,8 +56,8 @@ class EntityLinker(object):
                 boundaries = next(form_boundaries[node.text])
             except StopIteration:
                 boundaries = (None, None)
-            node.resource = Entity(entity_id, node.text, *boundaries)
-        return [node.resource for node in nodes if type(node.resource) == Entity]
+            node.entity = Entity(entity_id, node.text, *boundaries)
+        return [node.entity for node in nodes if type(node.entity) == Entity]
 
     def __vectorize(self, nodes):
         """Returns sparse vector of a text"""

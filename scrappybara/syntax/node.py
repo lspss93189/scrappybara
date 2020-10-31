@@ -14,16 +14,16 @@ class Node(object):
         self.particles = []  # verb/adj particles (lower case)
         self.det = None  # series of determiners attached to the noun, chunked string
         self.is_inf_to = False  # verb with form "TO + infinitive"
-        # CHUNKING
-        self.chunk = None  # string, noun phrase
         # LEMMATIZATION
-        self.lemma = None
+        self.lemma = self.standard
         self.suffix = None
         # CANONICALIZATION
-        self.canon = None  # canonical representation
+        self.canon = self.lemma  # canonical representation
         self.active_verb = None  # active verb from past participle
-        # RESOURCE LINKING
-        self.resource = None
+        # ENTITY LINKING
+        self.form = None  # surfacic form that could be a named-entity
+        self.eids = []  # candidate entity IDs (disambiguation needed if more than 1)
+        self.entity = None  # Entity object if the form has been linked to an entity ID
 
     def __str__(self):
         return self.canon
