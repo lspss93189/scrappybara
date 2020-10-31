@@ -103,7 +103,7 @@ def extract_forms(resources_dir):
     reports_dir = cfg.REPORTS_DIR / 'extract_classes'
 
     # Read classes
-    print("Loading classes...")
+    print('Loading classes...')
     uri_cid = load_dict_from_txt_file(reports_dir / 'uri_cid.txt', value_type=int)
     print('Extracted {:,} classes in {}'.format(len(uri_cid), timer.lap_time))
     print()
@@ -117,7 +117,7 @@ def extract_forms(resources_dir):
     # -------------------------------------------------------------------------->
 
     reports_dir = cfg.REPORTS_DIR / 'extract_forms'
-    filepaths = [pathlib.Path(resources_dir) / filename for filename in files_in_dir(resources_dir)]
+    filepaths = [pathlib.Path(resources_dir) / file for file in files_in_dir(resources_dir) if file.endswith('.bz2')]
 
     report_file = 'titles.txt'
     if path_exists(reports_dir / report_file):

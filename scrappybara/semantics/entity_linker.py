@@ -21,8 +21,8 @@ def _find_boundaries(form, text):
 class EntityLinker(object):
 
     def __init__(self, form_eids):
-        self.__form_eids = form_eids
-        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'id_vector.pkl')  # entity id => dict sparce vect
+        self.__form_eids = form_eids  # form => set of entity IDs
+        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
         self.__lexeme_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'lexemes.pkl')  # lexeme => (idx, idf score)
 
     def __call__(self, nodes, original_text):

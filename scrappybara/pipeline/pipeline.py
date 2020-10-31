@@ -32,7 +32,7 @@ class Pipeline(LabelledSentencePipeline):
         # GPU ?
         self.__gpu_batch_size = gpu_batch_size
         # Load data
-        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'str_ids.pkl')  # form => list of entity ids
+        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
         # Language model
         self.__lm = LanguageModel()
         super().__init__(self.__lm, form_eids)
