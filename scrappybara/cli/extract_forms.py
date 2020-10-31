@@ -171,6 +171,7 @@ def extract_forms(resources_dir):
 
     report_file = 'form_titles_from_items.txt'
     if path_exists(reports_dir / report_file):
+        print('Reading forms from "%s"' % report_file)
         form_titles_from_items = load_dict_from_txt_file(reports_dir / report_file, value_type=eval)
     else:
         print('Extracting forms from Wikidata items...')
@@ -191,6 +192,7 @@ def extract_forms(resources_dir):
 
     report_file = 'form_titles_from_titles.txt'
     if path_exists(reports_dir / report_file):
+        print('Reading forms from "%s"' % report_file)
         form_titles_from_titles = load_dict_from_txt_file(reports_dir / report_file, value_type=eval)
     else:
         print('Extracting forms from titles...')
@@ -238,6 +240,7 @@ def extract_forms(resources_dir):
 
     if all([path_exists(reports_dir / report_redirects), path_exists(reports_dir / report_disambs),
             path_exists(reports_dir / report_links)]):
+        print('Reading forms from links...')
         form_titles_from_redirects = load_dict_from_txt_file(reports_dir / report_redirects, value_type=eval)
         form_titles_from_disambs = load_dict_from_txt_file(reports_dir / report_disambs, value_type=eval)
         form_titles_from_links = load_dict_from_txt_file(reports_dir / report_links, value_type=eval)
@@ -263,10 +266,9 @@ def extract_forms(resources_dir):
                         redirects.append((title, redirect))
                     # Disambiguation
                     elif _page_is_disamb(title, text):
-                        re_title = re.compile(r'%s' % title, re.I)
                         for match in re.finditer(re_simple_link, text):
                             target = match.group(1)
-                            if target in title_eid and re.findall(re_title, target):
+                            if target in title_eid and title.lower() in target.lower():
                                 disambs.append((title, target))
                     # Other links
                     elif text and title in title_eid:
@@ -274,6 +276,10 @@ def extract_forms(resources_dir):
                             target = match.group(1)
                             # Guards
                             if target not in title_eid:
+                                continue
+                            if title_eid[title] not in eid_cids:
+                                continue
+                            if event_cid in eid_cids[title_eid[title]]:
                                 continue
                             if title_eid[target] not in eid_cids:
                                 continue
@@ -320,5 +326,5 @@ def extract_forms(resources_dir):
         for form, eids in sorted(form_eids.items(), key=lambda x: len(x[1]), reverse=True):
             report.write('%s\t%d\t%s\n' % (form, len(eids), str({eid_title[eid] for eid in eids})))
     # Release to Data
-    save_pkl_file(form_eids, cfg.DATA_DIR / 'entities' / 'form_eids.txt')
+    save_pkl_file(form_eids, cfg.DATA_DIR / 'entities' / 'form_eids.pkl')
     print('Extracted {:,} forms in total in {}'.format(len(form_eids), timer.total_time))
