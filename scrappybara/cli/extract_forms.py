@@ -228,28 +228,23 @@ def extract_forms(resources_dir):
 
     report_redirects = 'form_titles_from_redirects.txt'
     report_disambs = 'form_titles_from_disambiguations.txt'
-    report_links = 'form_titles_from_links.txt'
 
     def _write_source_target_tuples(_tuples, _report_file):
         _form_titles = {}  # form => set of titles
         for _source, _target in _tuples:
             _form = _convert_to_form(_source)
-            add_in_dict_set(_form_titles, _form, _target)
+            if _form:
+                add_in_dict_set(_form_titles, _form, _target)
         _write_form_titles(_form_titles, _report_file)
         return _form_titles
 
-    if all([path_exists(reports_dir / report_redirects), path_exists(reports_dir / report_disambs),
-            path_exists(reports_dir / report_links)]):
+    if all([path_exists(reports_dir / report_redirects), path_exists(reports_dir / report_disambs)]):
         print('Reading forms from links...')
         form_titles_from_redirects = load_dict_from_txt_file(reports_dir / report_redirects, value_type=eval)
         form_titles_from_disambs = load_dict_from_txt_file(reports_dir / report_disambs, value_type=eval)
-        form_titles_from_links = load_dict_from_txt_file(reports_dir / report_links, value_type=eval)
     else:
         print('Extracting forms from links...')
         re_simple_link = re.compile(r'\[\[([^\n]+?)(\|.+?)?]]')
-        re_complex_link = re.compile(r'\[\[([^\n]+?)\|([^\n]+?)]]')
-        display_eid_titles = {}  # (form, eid) => set of titles
-        event_cid = uri_cid['http://schema.org/Event']
         # List of tuples (source, target)
         redirects = []
         disambs = []
@@ -270,38 +265,11 @@ def extract_forms(resources_dir):
                             target = match.group(1)
                             if target in title_eid and title.lower() in target.lower():
                                 disambs.append((title, target))
-                    # Other links
-                    elif text and title in title_eid:
-                        for match in re.finditer(re_complex_link, text):
-                            target = match.group(1)
-                            # Guards
-                            if target not in title_eid:
-                                continue
-                            if title_eid[title] not in eid_cids:
-                                continue
-                            if event_cid in eid_cids[title_eid[title]]:
-                                continue
-                            if title_eid[target] not in eid_cids:
-                                continue
-                            if event_cid in eid_cids[title_eid[target]]:
-                                continue
-                            # Extraction
-                            display = match.group(2)
-                            add_in_dict_set(display_eid_titles, (display, title_eid[target]), title)
         # Writing reports
         form_titles_from_redirects = _write_source_target_tuples(redirects, report_redirects)
         form_titles_from_disambs = _write_source_target_tuples(disambs, report_disambs)
-        form_titles_from_links = {}  # form => set of titles
-        for display_eid, pages in display_eid_titles.items():
-            # Just use other links that have been used in at least 2 different pages
-            if len(pages) > 1:
-                display, eid = display_eid
-                form = _convert_to_form(display)
-                add_in_dict_set(form_titles_from_links, form, eid_title[eid])
-        _write_form_titles(form_titles_from_links, report_links)
     print('{:,} forms extracted from redirects'.format(len(form_titles_from_redirects)))
     print('{:,} forms extracted from disambiguations'.format(len(form_titles_from_disambs)))
-    print('{:,} forms extracted from other links'.format(len(form_titles_from_links)))
     print('Extracted forms from all types of link in {}'.format(timer.lap_time))
     print()
 
@@ -320,7 +288,6 @@ def extract_forms(resources_dir):
     _update_form_eids(form_titles_from_titles)
     _update_form_eids(form_titles_from_redirects)
     _update_form_eids(form_titles_from_disambs)
-    _update_form_eids(form_titles_from_links)
     # Write global report
     with txt_file_writer(reports_dir / 'form_titles.txt') as report:
         for form, eids in sorted(form_eids.items(), key=lambda x: len(x[1]), reverse=True):
