@@ -8,9 +8,26 @@ from lxml import etree
 import scrappybara.config as cfg
 from scrappybara.preprocessing.tokenizer import Tokenizer
 from scrappybara.utils.files import bz2_file_bytes_reader, files_in_dir, load_set_from_txt_file, \
-    load_dict_from_txt_file, txt_file_writer, txt_file_reader, path_exists
+    load_dict_from_txt_file, txt_file_writer, txt_file_reader, path_exists, save_pkl_file
 from scrappybara.utils.mutables import add_in_dict_set, reverse_dict
 from scrappybara.utils.timer import Timer
+
+
+def _valid_page(title):
+    avoid_pages = ['Wikipedia:', 'Portal:', 'Category:', 'Template:', 'File:', 'Module:', 'MediaWiki:', 'Book:',
+                   'Draft:', 'List of']
+    if not title:
+        return False
+    if any([title.startswith(avoid_page) for avoid_page in avoid_pages]):
+        return False
+    return True
+
+
+def _page_is_disamb(title, text):
+    if not text:
+        return False
+    re_disamb = re.compile(r'{{[^()]*?Disambiguation[^()]*?}}', re.I)
+    return title.endswith('(disambiguation)') or re.findall(re_disamb, text)
 
 
 def _valid_token(token):
@@ -50,11 +67,6 @@ def _extract_article(elem):
 
 def _extract_titles(filepath):
     """Extract valid titles from wikipedia articles"""
-    # Patterns
-    re_disamb = re.compile(r'{{[^()]*?Disambiguation[^()]*?}}', re.I)  # Wikipedia disambiguation template
-    categories = ['Wikipedia:', 'Portal:', 'Category:', 'Template:', 'File:', 'Module:', 'MediaWiki:', 'Book:',
-                  'Draft:', 'List of']
-    # Read file
     titles = []
     with bz2_file_bytes_reader(filepath) as data:
         for _, elem in etree.iterparse(data):
@@ -62,12 +74,9 @@ def _extract_titles(filepath):
             # Guards
             if redirect:
                 continue
-            if title:
-                if title.endswith('(disambiguation)'):
-                    continue
-                if any([title.startswith(start_bl) for start_bl in categories]):
-                    continue
-            if text and re.findall(re_disamb, text):
+            if not _valid_page(title):
+                continue
+            if _page_is_disamb(title, text):
                 continue
             # Add title
             if title:
@@ -85,8 +94,6 @@ def extract_forms(resources_dir):
     A report is saved at each step, so we don't have to run the whole process again when one step fails.
     To make sure a step is rerun, the corresponding report must be manually deleted beforehand.
     """
-    reports_dir = cfg.REPORTS_DIR / 'extract_forms'
-    filepaths = [pathlib.Path(resources_dir) / filename for filename in files_in_dir(resources_dir)]
     timer = Timer()
     print()
 
@@ -94,13 +101,14 @@ def extract_forms(resources_dir):
     # -------------------------------------------------------------------------->
 
     reports_dir = cfg.REPORTS_DIR / 'extract_classes'
+
     # Read classes
-    print("Extracting classes...")
+    print("Loading classes...")
     uri_cid = load_dict_from_txt_file(reports_dir / 'uri_cid.txt', value_type=int)
     print('Extracted {:,} classes in {}'.format(len(uri_cid), timer.lap_time))
     print()
     # Read entity's classes
-    print("Extracting entity's class IDs...")
+    print("Loading entity's class IDs...")
     eid_cids = load_dict_from_txt_file(reports_dir / 'eid_cids.txt', key_type=int, value_type=eval)
     print('{:,} entities assigned in {}'.format(len(eid_cids), timer.lap_time))
     print()
@@ -108,7 +116,10 @@ def extract_forms(resources_dir):
     # EXTRACT WIKIPEDIA TITLES
     # -------------------------------------------------------------------------->
 
-    report_file = 'wikipedia_titles.txt'
+    reports_dir = cfg.REPORTS_DIR / 'extract_forms'
+    filepaths = [pathlib.Path(resources_dir) / filename for filename in files_in_dir(resources_dir)]
+
+    report_file = 'titles.txt'
     if path_exists(reports_dir / report_file):
         print('Reading Wikipedia titles from "%s"...' % report_file)
         titles = load_set_from_txt_file(reports_dir / report_file)
@@ -120,18 +131,19 @@ def extract_forms(resources_dir):
         with txt_file_writer(reports_dir / report_file) as report:
             for title in titles:
                 report.write('%s\n' % title)
-    titles = set(titles)
+        titles = set(titles)
     print('{:,} titles extracted in {}'.format(len(titles), timer.lap_time))
     print()
 
     # LINK TITLES TO IDs
     # -------------------------------------------------------------------------->
 
-    report_file = 'form_eids.txt.txt'
+    report_file = 'eid_title.txt'
     if path_exists(reports_dir / report_file):
-        print('Reading title from "%s"...' % report_file)
+        print('Reading ID/title mappings from "%s"...' % report_file)
         eid_title = load_dict_from_txt_file(reports_dir / report_file, key_type=int)
     else:
+        print('Extracting ID/title mappings...')
         with txt_file_reader(cfg.REPORTS_DIR / 'extract_items' / 'items.txt') as data:
             eid_title = {}  # entity ID => wikipedia title
             for line in data:
@@ -146,40 +158,32 @@ def extract_forms(resources_dir):
     print('{:,} titles have been mapped to an entity ID'.format(len(eid_title), timer.lap_time))
     print()
 
-    # PREPARE FORMS EXTRACTION
+    # PREPARE FORM EXTRACTION
     # -------------------------------------------------------------------------->
 
-    form_eids = {}  # form => set of entity IDs
-
-    def _update_form_eids(_report_file):
-        print('Reading forms from "%s"' % _report_file)
-        _form_titles = load_dict_from_txt_file(reports_dir / _report_file, value_type=eval).items()
-        for _form, _titles in _form_titles:
-            for _title in _titles:
-                add_in_dict_set(form_eids, _form, title_eid[_title])
-        return _form_titles
+    def _write_form_titles(_form_titles, _report_file):
+        with txt_file_writer(reports_dir / _report_file) as _report:
+            for _form, _titles in _form_titles.items():
+                _report.write('%s\t%s\n' % (_form, str(_titles)))
 
     # EXTRACT FORMS FROM WIKIDATA ITEMS
     # -------------------------------------------------------------------------->
 
     report_file = 'form_titles_from_items.txt'
     if path_exists(reports_dir / report_file):
-        form_titles = _update_form_eids(report_file)
+        form_titles_from_items = load_dict_from_txt_file(reports_dir / report_file, value_type=eval)
     else:
         print('Extracting forms from Wikidata items...')
         with txt_file_reader(cfg.REPORTS_DIR / 'extract_items' / 'items.txt') as data:
-            form_titles = {}  # form => set of titles
+            form_titles_from_items = {}  # form => set of titles
             for line in data:
                 item = json.loads(line.strip())
                 if item['title'] in title_eid:
                     for form in [_convert_to_form(label) for label in [item['label']] + item['aliases']]:
                         if form:
-                            add_in_dict_set(form_titles, form, item['title'])
-                            add_in_dict_set(form_eids, form, item['id'])
-        with txt_file_writer(reports_dir / report_file) as report:
-            for form, titles in form_titles.items():
-                report.write('%s\t%s\n' % (form, str(titles)))
-    print('{:,} forms extracted in {}'.format(len(form_titles), timer.lap_time))
+                            add_in_dict_set(form_titles_from_items, form, item['title'])
+        _write_form_titles(form_titles_from_items, report_file)
+    print('{:,} forms extracted in {}'.format(len(form_titles_from_items), timer.lap_time))
     print()
 
     # EXTRACT FORMS FROM TITLES
@@ -187,13 +191,13 @@ def extract_forms(resources_dir):
 
     report_file = 'form_titles_from_titles.txt'
     if path_exists(reports_dir / report_file):
-        form_titles = _update_form_eids(report_file)
+        form_titles_from_titles = load_dict_from_txt_file(reports_dir / report_file, value_type=eval)
     else:
         print('Extracting forms from titles...')
         re_parenthesis = re.compile(r'([^()]+?) \(.+?\)')  # e.g. "Harbach (surname)", 1 capturing group
         re_comma = re.compile(r'([^,"(]+?), ([^,")\'?!.&]+?)')  # e.g. "Paris, France", 2 capturing groups
         creative_work_cid = uri_cid['http://schema.org/CreativeWork']
-        form_titles = {}  # form => set of titles
+        form_titles_from_titles = {}  # form => set of titles
         for eid, title in eid_title.items():
             match = re.fullmatch(re_parenthesis, title)
             form = None
@@ -202,62 +206,119 @@ def extract_forms(resources_dir):
             else:
                 match = re.fullmatch(re_comma, title)
                 if match:
-                    # Avoid any title for which we don't have classes
+                    # Guards
                     if eid not in eid_cids:
                         continue
-                    # Avoid end of enumeration
                     if any([' and ' in match.group(2), ' or ' in match.group(2)]):
                         continue
-                    # Don't split titles of creative works
                     if creative_work_cid in eid_cids[eid]:
                         continue
+                    # Create form
                     form = _convert_to_form(match.group(1))
             if form:
-                add_in_dict_set(form_titles, form, title)
-                add_in_dict_set(form_eids, form, title_eid[title])
-        with txt_file_writer(reports_dir / 'form_titles_from_titles.txt') as report:
-            for form, titles in form_titles.items():
-                report.write('%s\t%s\n' % (form, str(titles)))
-    print('{:,} forms extracted from titles in {}'.format(len(form_titles), timer.lap_time))
+                add_in_dict_set(form_titles_from_titles, form, title)
+        _write_form_titles(form_titles_from_titles, report_file)
+    print('{:,} forms extracted from titles in {}'.format(len(form_titles_from_titles), timer.lap_time))
     print()
 
-    # EXTRACT FORMS FROM LINKS
+    # EXTRACT FORMS FROM ALL TYPE OF LINKS
     # -------------------------------------------------------------------------->
 
-    report_file = 'form_titles_from_links.txt'
-    if path_exists(reports_dir / report_file):
-        form_titles = _update_form_eids(report_file)
+    report_redirects = 'form_titles_from_redirects.txt'
+    report_disambs = 'form_titles_from_disambiguations.txt'
+    report_links = 'form_titles_from_links.txt'
+
+    def _write_source_target_tuples(_tuples, _report_file):
+        _form_titles = {}  # form => set of titles
+        for _source, _target in _tuples:
+            _form = _convert_to_form(_source)
+            add_in_dict_set(_form_titles, _form, _target)
+        _write_form_titles(_form_titles, _report_file)
+        return _form_titles
+
+    if all([path_exists(reports_dir / report_redirects), path_exists(reports_dir / report_disambs),
+            path_exists(reports_dir / report_links)]):
+        form_titles_from_redirects = load_dict_from_txt_file(reports_dir / report_redirects, value_type=eval)
+        form_titles_from_disambs = load_dict_from_txt_file(reports_dir / report_disambs, value_type=eval)
+        form_titles_from_links = load_dict_from_txt_file(reports_dir / report_links, value_type=eval)
     else:
         print('Extracting forms from links...')
-        re_link = re.compile(r'\[\[([^\n]+?)\|([^\n]+?)]]')
-        form_titles = {}  # form => set of titles
-        form_eid_titles = {}  # (form, eid) => set of titles
+        re_simple_link = re.compile(r'\[\[([^\n]+?)(\|.+?)?]]')
+        re_complex_link = re.compile(r'\[\[([^\n]+?)\|([^\n]+?)]]')
+        display_eid_titles = {}  # (form, eid) => set of titles
+        event_cid = uri_cid['http://schema.org/Event']
+        # List of tuples (source, target)
+        redirects = []
+        disambs = []
+        # Extraction: not using multiprocessing due to memory overflow (each file has a lot of links)
         for filepath in filepaths:
             with bz2_file_bytes_reader(filepath) as data:
                 for _, elem in etree.iterparse(data):
-                    page, _, text = _extract_article(elem)
-                    if page and text:
-                        for match in re.finditer(re_link, text):
+                    title, redirect, text = _extract_article(elem)
+                    # Guards
+                    if not _valid_page(title):
+                        continue
+                    # Redirect
+                    if redirect in title_eid:
+                        redirects.append((title, redirect))
+                    # Disambiguation
+                    elif _page_is_disamb(title, text):
+                        re_title = re.compile(r'%s' % title, re.I)
+                        for match in re.finditer(re_simple_link, text):
                             target = match.group(1)
+                            if target in title_eid and re.findall(re_title, target):
+                                disambs.append((title, target))
+                    # Other links
+                    elif text and title in title_eid:
+                        for match in re.finditer(re_complex_link, text):
+                            target = match.group(1)
+                            # Guards
+                            if target not in title_eid:
+                                continue
+                            if title_eid[target] not in eid_cids:
+                                continue
+                            if event_cid in eid_cids[title_eid[target]]:
+                                continue
+                            # Extraction
                             display = match.group(2)
-                            if target in title_eid:
-                                add_in_dict_set(form_eid_titles, (_convert_to_form(display), title_eid[target]), page)
-        for form_eid, pages in form_eid_titles.items():
-            # Just use links that have been used in at least 2 different pages
+                            add_in_dict_set(display_eid_titles, (display, title_eid[target]), title)
+        # Writing reports
+        form_titles_from_redirects = _write_source_target_tuples(redirects, report_redirects)
+        form_titles_from_disambs = _write_source_target_tuples(disambs, report_disambs)
+        form_titles_from_links = {}  # form => set of titles
+        for display_eid, pages in display_eid_titles.items():
+            # Just use other links that have been used in at least 2 different pages
             if len(pages) > 1:
-                form, eid = form_eid
-                add_in_dict_set(form_titles, form, eid_title[eid])
-                add_in_dict_set(form_eids, form, eid)
-        with txt_file_writer(reports_dir / 'form_titles_from_links.txt') as report:
-            for form, titles in form_titles.items():
-                report.write('%s\t%s\n' % (form, str(titles)))
-    print('{:,} forms extracted from links in {}'.format(len(form_titles), timer.lap_time))
+                display, eid = display_eid
+                form = _convert_to_form(display)
+                add_in_dict_set(form_titles_from_links, form, eid_title[eid])
+        _write_form_titles(form_titles_from_links, report_links)
+    print('{:,} forms extracted from redirects'.format(len(form_titles_from_redirects)))
+    print('{:,} forms extracted from disambiguations'.format(len(form_titles_from_disambs)))
+    print('{:,} forms extracted from other links'.format(len(form_titles_from_links)))
+    print('Extracted forms from all types of link in {}'.format(timer.lap_time))
     print()
 
-    # ALL DONE
+    # CONSOLIDATE
     # -------------------------------------------------------------------------->
 
-    print('All done in {}'.format(timer.total_time))
+    form_eids = {}  # form => set of entity IDs
 
+    def _update_form_eids(_form_titles):
+        for _form, _titles in _form_titles.items():
+            for _title in _titles:
+                add_in_dict_set(form_eids, _form, title_eid[_title])
 
-extract_forms('/media/data/wikipedia')
+    # Consolidate forms
+    _update_form_eids(form_titles_from_items)
+    _update_form_eids(form_titles_from_titles)
+    _update_form_eids(form_titles_from_redirects)
+    _update_form_eids(form_titles_from_disambs)
+    _update_form_eids(form_titles_from_links)
+    # Write global report
+    with txt_file_writer(reports_dir / 'form_titles.txt') as report:
+        for form, eids in sorted(form_eids.items(), key=lambda x: len(x[1]), reverse=True):
+            report.write('%s\t%d\t%s\n' % (form, len(eids), str({eid_title[eid] for eid in eids})))
+    # Release to Data
+    save_pkl_file(form_eids, cfg.DATA_DIR / 'entities' / 'form_eids.txt')
+    print('Extracted {:,} forms in total in {}'.format(len(form_eids), timer.total_time))
