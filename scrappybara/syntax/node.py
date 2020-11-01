@@ -1,6 +1,3 @@
-from scrappybara.syntax.tags import Tag
-
-
 class Node(object):
     """Belongs to a parse tree"""
 
@@ -28,8 +25,3 @@ class Node(object):
 
     def __repr__(self):
         return self.canon
-
-    @property
-    def is_lexeme(self):
-        """Whether node is part of vocabulary"""
-        return self.tag in {Tag.NOUN, Tag.PROPN, Tag.ADJ, Tag.VERB}

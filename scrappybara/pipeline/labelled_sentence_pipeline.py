@@ -22,9 +22,9 @@ class LabelledSentencePipeline(object):
         reversed_pps = reverse_dict(pps)  # lemma => past participle
         # Pipeline
         self.__nodify = Nodifier()
-        self.__lemmatize = Lemmatizer(language_model, adjs, preterits, pps, plurals, comps, sups, reversed_pps)
+        self._lemmatize = Lemmatizer(language_model, adjs, preterits, pps, plurals, comps, sups, reversed_pps)
         self.__fix = Fixer(adjs, nouns)
-        self.__canonicalize = Canonicalizer(self.__lemmatize)
+        self.__canonicalize = Canonicalizer(self._lemmatize)
 
     def _process_sentence(self, sentence_pack):
         """Args are packed into a list of args so this process can be multithreaded"""
@@ -33,7 +33,7 @@ class LabelledSentencePipeline(object):
         node_dict, node_tree = self.__nodify(tokens, tags, idx_tree)
         # Lemmatization
         for node in node_dict.values():
-            node.lemma, node.suffix = self.__lemmatize(node.standard, node.tag)
+            node.lemma, node.suffix = self._lemmatize(node.standard, node.tag)
         # Fixing
         for node in node_dict.values():
             self.__fix(node, node_tree)

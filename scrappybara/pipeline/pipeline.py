@@ -12,6 +12,7 @@ from scrappybara.semantics.entity_linker import EntityLinker
 from scrappybara.syntax.charset import Charset
 from scrappybara.syntax.models import PDepsModel, TransModel, PTagsModel
 from scrappybara.syntax.parser import Parser
+from scrappybara.syntax.tags import Tag
 from scrappybara.syntax.wordset import Wordset
 from scrappybara.utils.files import txt_file_reader, load_pkl_file
 from scrappybara.utils.multithreading import run_multithreads
@@ -23,6 +24,9 @@ class Pipeline(LabelledSentencePipeline):
     # Used to split sentences again after they've been sentencized once
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}
 
+    # Lexeme's tags
+    __lex_tags = {Tag.NOUN, Tag.PROPN, Tag.ADJ, Tag.VERB}
+
     def __init__(self, batch_size=128):
         # Check data versioning
         with txt_file_reader(cfg.DATA_DIR / 'version.txt') as txt_file:
@@ -32,24 +36,23 @@ class Pipeline(LabelledSentencePipeline):
         # Load data
         lm = LanguageModel()
         super().__init__(lm)
-        self.__charset = Charset().load()
-        self.__wordset = Wordset(lm).load()
-        self.__ptags_model = PTagsModel(len(self.__charset)).load()
-        self.__pdeps_model = PDepsModel(len(self.__charset)).load()
-        self.__trans_model = TransModel(len(self.__charset)).load()
         self.__lexeme_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'lexemes.pkl')  # lexeme => (idx, idf score)
-        self.__form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
-        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
+        self._charset = Charset().load()
+        self._wordset = Wordset(lm).load()
+        self._ptags_model = PTagsModel(len(self._charset)).load()
+        pdeps_model = PDepsModel(len(self._charset)).load()
+        trans_model = TransModel(len(self._charset)).load()
+        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
+        eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
         # Pipeline
-        self.__sentencize = Sentencizer()
-        self.__parse = Parser(self.__charset, self.__wordset, self.__ptags_model, self.__pdeps_model,
-                              self.__trans_model, batch_size)
-        self.__link_entities = EntityLinker(self.__form_eids, self.__eid_vector)
+        self._sentencize = Sentencizer()
+        self.__parse = Parser(self._charset, self._wordset, self._ptags_model, pdeps_model, trans_model, batch_size)
+        self.__link_entities = EntityLinker(form_eids, eid_vector)
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""
         tokens, sent_ranges = self._extract_sentences(texts)
-        _, _, node_dicts, node_trees = self._process_tokens(tokens)
+        _, _, node_dicts, node_trees = self._parse_tokens(tokens)
         # Create documents
         docs = []
         for start, end in sent_ranges:
@@ -81,7 +84,7 @@ class Pipeline(LabelledSentencePipeline):
         Also returns sentences' ranges to be able to regroup by text later.
         """
         # Text tokens is a list of list of list of tokens (tokens grouped by sentences for each text)
-        tokens = run_multithreads(texts, self.__sentencize, cfg.NB_PROCESSES)
+        tokens = run_multithreads(texts, self._sentencize, cfg.NB_PROCESSES)
         tokens = run_multithreads(tokens, self.__shorten_sentences, cfg.NB_PROCESSES)
         # Remember the association text/sentences
         sent_ranges = []
@@ -92,27 +95,25 @@ class Pipeline(LabelledSentencePipeline):
             total_sents = new_total
         return [token_lists for group in tokens for token_lists in group], sent_ranges
 
-    def _process_tokens(self, token_lists):
-        """Proxy for all classes of pipeline"""
+    def _parse_tokens(self, token_lists):
+        """Parses multiple sentences"""
         tags, idx_trees = self.__parse(token_lists)
         sent_packs = list(zip(token_lists, tags, idx_trees))
         node_dict_node_tree_list = run_multithreads(sent_packs, self._process_sentence, cfg.NB_PROCESSES)
         node_dicts, node_trees = zip(*node_dict_node_tree_list)
         return tags, idx_trees, node_dicts, node_trees
 
-    @staticmethod
-    def _count_lexemes(node_dicts):
-        """Counts lexemes in a text.
-        A node_dict represents a sentence.
-        """
-        nodes = [node for node_dict in node_dicts for node in node_dict.values()]
-        return collections.Counter([n.canon for n in nodes if n.is_lexeme])
+    def _count_lexemes(self, lemma_tag_list):
+        """Counts lemmas with an appropriate tag"""
+        lexemes = [lemma for lemma, tag in lemma_tag_list if tag in self.__lex_tags]
+        return collections.Counter(lexemes)
 
     def _vectorize(self, node_dicts):
         """Returns sparse vector of a text.
         A node_dict represents a sentence.
         """
-        lexeme_counter = self._count_lexemes(node_dicts)
+        lemma_tag_list = [(node.lemma, node.tag) for node_dict in node_dicts for node in node_dict.values()]
+        lexeme_counter = self._count_lexemes(lemma_tag_list)
         total_count = sum(lexeme_counter.values())
         vector = {}  # idx of lexeme => score tf.idf
         for lexeme, count in lexeme_counter.items():
