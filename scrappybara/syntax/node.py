@@ -21,9 +21,7 @@ class Node(object):
         self.canon = self.lemma  # canonical representation
         self.active_verb = None  # active verb from past participle
         # ENTITY LINKING
-        self.form = None  # surfacic form that could be a named-entity
-        self.eids = []  # candidate entity IDs (disambiguation needed if more than 1)
-        self.entity = None  # Entity object if the form has been linked to an entity ID
+        self.entity = None  # Entity object
 
     def __str__(self):
         return self.canon

@@ -41,15 +41,14 @@ class Pipeline(LabelledSentencePipeline):
         _, _, node_dicts, node_trees = self._process_tokens(tokens)
         # Create documents
         docs = []
-        for idx, start_end in enumerate(sent_ranges):
-            start, end = start_end
+        for start, end in sent_ranges:
             doc_node_dicts = node_dicts[start:end]
             doc_node_trees = node_trees[start:end]
             sentences = []
             # Link entities
             vector = self._vectorize(doc_node_dicts)
-            for sent_idx, doc_node_dict in enumerate(doc_node_dicts):
-                entities = self.__link_entities(doc_node_dict, doc_node_trees[sent_idx], vector, texts[idx])
+            for idx, doc_node_dict in enumerate(doc_node_dicts):
+                entities = self.__link_entities(doc_node_dict, doc_node_trees[idx], vector)
                 sentences.append(Sentence(entities))
             docs.append(Document(sentences))
         return docs

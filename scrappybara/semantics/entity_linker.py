@@ -16,7 +16,7 @@ class EntityLinker(object):
         self.__form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
         self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
 
-    def __call__(self, node_dict, node_tree, doc_vector, original_text):
+    def __call__(self, node_dict, node_tree, doc_vector):
         """Returns entities found in a single sentence"""
         noun_parts = {node: [] for node in node_dict.values() if node.tag in self.__noun_tags}  # node => list of parts
         have_parent_noun = set()
@@ -31,22 +31,22 @@ class EntityLinker(object):
         # Register entities
         entities = []
         for root in [n for n in noun_parts if n not in have_parent_noun]:
-            entity = self.__chunk(root, noun_parts, node_tree, doc_vector, original_text)
+            entity = self.__chunk(root, noun_parts, node_tree, doc_vector)
             if entity is not None:
                 entities.append(entity)
         return entities
 
-    def __link_form_to_entity(self, form, eids, vector, text):
+    def __link_form_to_entity(self, form, eids, vector):
         """Tries to link a form to an entity.
         Returns None if not possible.
         """
-        scores = [cosine(vector, self.__eid_vector[eid]) for eid in eids]
+        scores = [cosine(vector, self.__eid_vector.get(eid, {})) for eid in eids]
         if max(scores) > self.__linking_threshold:
             selected_eid = eids[np.argmax(scores)]
-            return Entity(selected_eid, form, 0, 0)
+            return Entity(selected_eid, form)
         return None
 
-    def __chunk(self, root, noun_parts, node_tree, vector, text):
+    def __chunk(self, root, noun_parts, node_tree, vector):
         """Recursively builds a noun-phrase & converts it to an Entity if possible"""
         parts = [root]
 
@@ -68,7 +68,7 @@ class EntityLinker(object):
         for i in range(len(parts) - 1):
             form = ' '.join([node.standard for node in parts[i:]])
             eids = self.__form_eids[form]
-            entity = self.__link_form_to_entity(form, eids, vector, text)
+            entity = self.__link_form_to_entity(form, eids, vector)
             if entity is not None:
                 root.entity = entity
                 return entity
