@@ -1,7 +1,6 @@
 import scrappybara.config as cfg
 from scrappybara.normalization.canonicalizer import Canonicalizer
 from scrappybara.normalization.lemmatizer import Lemmatizer
-from scrappybara.semantics.form_recognizer import FormRecognizer
 from scrappybara.syntax.fixer import Fixer
 from scrappybara.syntax.nodifier import Nodifier
 from scrappybara.utils.files import load_dict_from_txt_file, load_set_from_txt_file
@@ -12,7 +11,7 @@ class LabelledSentencePipeline(object):
     """Contains all steps to process a sentence that is already labelled"""
 
     def __init__(self, language_model):
-        # Irregular lemmatization/inflection
+        # Irregular lemmatization
         preterits = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_preterits.txt')
         pps = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_past_participles.txt')
         plurals = load_dict_from_txt_file(cfg.DATA_DIR / 'english' / 'irregular_plurals.txt')
@@ -21,12 +20,11 @@ class LabelledSentencePipeline(object):
         nouns = load_set_from_txt_file(cfg.DATA_DIR / 'english' / 'nouns.txt')
         adjs = load_set_from_txt_file(cfg.DATA_DIR / 'english' / 'adjectives.txt')
         reversed_pps = reverse_dict(pps)  # lemma => past participle
-        # Pipeline steps
+        # Pipeline
         self.__nodify = Nodifier()
         self.__lemmatize = Lemmatizer(language_model, adjs, preterits, pps, plurals, comps, sups, reversed_pps)
         self.__fix = Fixer(adjs, nouns)
         self.__canonicalize = Canonicalizer(self.__lemmatize)
-        self.__recognize_forms = FormRecognizer()
 
     def _process_sentence(self, sentence_pack):
         """Args are packed into a list of args so this process can be multithreaded"""
@@ -42,6 +40,4 @@ class LabelledSentencePipeline(object):
         # Canonicalization
         for node in node_dict.values():
             self.__canonicalize(node)
-        # Form recognition
-        self.__recognize_forms(node_dict.values(), node_tree)
-        return node_dict
+        return node_dict, node_tree
