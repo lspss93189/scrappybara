@@ -1,5 +1,4 @@
 import collections
-import os
 
 import scrappybara.config as cfg
 from scrappybara.syntax.charset import Charset
@@ -13,8 +12,6 @@ from scrappybara.syntax.wordset import Wordset
 from scrappybara.utils.multithreading import run_multithreads
 from scrappybara.utils.mutables import make_batches
 from scrappybara.utils.tree import Tree
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class _Parse(object):
