@@ -15,6 +15,8 @@ from scrappybara.utils.multithreading import run_multithreads
 
 
 class Pipeline(LabelledSentencePipeline):
+    """Production pipeline"""
+
     # Used to split sentences again after they've been sentencized once
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}
 
