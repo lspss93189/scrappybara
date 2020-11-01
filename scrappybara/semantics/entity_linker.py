@@ -1,20 +1,19 @@
-import scrappybara.config as cfg
 import numpy as np
+
+from scrappybara.semantics.entity import Entity
 from scrappybara.syntax.dependencies import Dep, MARKER_DEPS
 from scrappybara.syntax.tags import Tag
-from scrappybara.utils.files import load_pkl_file
 from scrappybara.utils.maths import cosine
 from scrappybara.utils.mutables import append_to_dict_list
-from scrappybara.semantics.entity import Entity
 
 
 class EntityLinker(object):
     __noun_tags = {Tag.NOUN, Tag.PROPN}
     __linking_threshold = 0.0  # Minimum cosine required to link an entity
 
-    def __init__(self):
-        self.__form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
-        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
+    def __init__(self, form_eids, eid_vector):
+        self.__form_eids = form_eids
+        self.__eid_vector = eid_vector
 
     def __call__(self, node_dict, node_tree, doc_vector):
         """Returns entities found in a single sentence"""

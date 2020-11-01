@@ -1,14 +1,10 @@
 import collections
 
 import scrappybara.config as cfg
-from scrappybara.syntax.charset import Charset
 from scrappybara.syntax.dependencies import Dep
-from scrappybara.syntax.models import PDepsModel, TransModel
-from scrappybara.syntax.models import PTagsModel
 from scrappybara.syntax.tags import Tag
 from scrappybara.syntax.training_samples import vectorize_sentence, make_masks
 from scrappybara.syntax.transitions import Trans
-from scrappybara.syntax.wordset import Wordset
 from scrappybara.utils.multithreading import run_multithreads
 from scrappybara.utils.mutables import make_batches
 from scrappybara.utils.tree import Tree
@@ -94,37 +90,36 @@ def _build_tree(parse):
 
 class Parser(object):
 
-    def __init__(self, language_model, batch_size):
+    def __init__(self, charset, wordset, ptags_model, pdeps_model, trans_model, batch_size):
         self.__batch_size = batch_size
-        self.__charset = Charset().load()
-        self.__wordset = Wordset(language_model).load()
-        self.__ptags_model = PTagsModel(len(self.__charset)).load()
-        self.__pdeps_model = PDepsModel(len(self.__charset)).load()
-        self.__trans_model = TransModel(len(self.__charset)).load()
+        self.__charset = charset
+        self.__wordset = wordset
+        self.__ptags_model = ptags_model
+        self.__pdeps_model = pdeps_model
+        self.__trans_model = trans_model
 
     def __call__(self, token_lists):
         """Parses sentences by batch"""
         mats = run_multithreads(token_lists, self.__vectorize_sentence, cfg.NB_PROCESSES)
         batches = make_batches(mats, self.__batch_size)
-        all_parses = []
+        parses = []
         for batch in batches:
             seq_lengths, char_codes, word_vectors = zip(*batch)
             tag_codes = self.__predict_tags(char_codes, word_vectors)
             dep_codes = self.__predict_deps(tag_codes, char_codes, word_vectors)
             for idx, seq_length in enumerate(seq_lengths):
-                all_parses.append(
-                    _Parse(seq_length, tag_codes[idx], dep_codes[idx], char_codes[idx], word_vectors[idx]))
+                parses.append(_Parse(seq_length, tag_codes[idx], dep_codes[idx], char_codes[idx], word_vectors[idx]))
         # Predict transitions
-        incomplete_parses = [parse for parse in all_parses if not parse.complete]
+        incomplete_parses = [parse for parse in parses if not parse.complete]
         while incomplete_parses:
             parse_batches = make_batches(incomplete_parses, self.__batch_size)
             for batch in parse_batches:
                 self.__predict_transitions(batch)
-            incomplete_parses = [parse for parse in all_parses if not parse.complete]
+            incomplete_parses = [parse for parse in parses if not parse.complete]
         # Prepare results
-        all_tags = [parse.tags for parse in all_parses]
-        all_trees = run_multithreads(all_parses, _build_tree, cfg.NB_PROCESSES)
-        return all_tags, all_trees
+        tag_lists = [parse.tags for parse in parses]
+        tree_lists = run_multithreads(parses, _build_tree, cfg.NB_PROCESSES)
+        return tag_lists, tree_lists
 
     def __vectorize_sentence(self, tokens):
         return vectorize_sentence(tokens, self.__charset, self.__wordset)

@@ -9,7 +9,10 @@ from scrappybara.pipeline.labelled_sentence_pipeline import LabelledSentencePipe
 from scrappybara.pipeline.sentence import Sentence
 from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.semantics.entity_linker import EntityLinker
+from scrappybara.syntax.charset import Charset
+from scrappybara.syntax.models import PDepsModel, TransModel, PTagsModel
 from scrappybara.syntax.parser import Parser
+from scrappybara.syntax.wordset import Wordset
 from scrappybara.utils.files import txt_file_reader, load_pkl_file
 from scrappybara.utils.multithreading import run_multithreads
 
@@ -29,11 +32,19 @@ class Pipeline(LabelledSentencePipeline):
         # Load data
         lm = LanguageModel()
         super().__init__(lm)
+        self.__charset = Charset().load()
+        self.__wordset = Wordset(lm).load()
+        self.__ptags_model = PTagsModel(len(self.__charset)).load()
+        self.__pdeps_model = PDepsModel(len(self.__charset)).load()
+        self.__trans_model = TransModel(len(self.__charset)).load()
         self.__lexeme_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'lexemes.pkl')  # lexeme => (idx, idf score)
+        self.__form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')  # form => list of entity ids
+        self.__eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')  # eID => dict sparce vector
         # Pipeline
         self.__sentencize = Sentencizer()
-        self.__parse = Parser(lm, batch_size)
-        self.__link_entities = EntityLinker()
+        self.__parse = Parser(self.__charset, self.__wordset, self.__ptags_model, self.__pdeps_model,
+                              self.__trans_model, batch_size)
+        self.__link_entities = EntityLinker(self.__form_eids, self.__eid_vector)
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""

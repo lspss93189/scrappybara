@@ -14,7 +14,7 @@ class Lemmatizer(object):
         'sub', 'grand',
     }
 
-    # Not to lemmatize
+    # Do not lemmatize
     __bare_ed = {'need'}
     __bare_men = {'acumen'}
 
@@ -30,7 +30,7 @@ class Lemmatizer(object):
         self.__lemma_pp = lemma_pp
 
     def __call__(self, word, tag):
-        """Returns lemma & suffix (can be None)"""
+        """Returns lemma & suffix (suffix can be None)"""
 
         # FULL MATCH
         # -------------------------------------------------------------------------->
