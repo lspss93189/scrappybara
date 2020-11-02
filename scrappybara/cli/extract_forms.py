@@ -8,7 +8,7 @@ from lxml import etree
 import scrappybara.config as cfg
 from scrappybara.preprocessing.tokenizer import Tokenizer
 from scrappybara.utils.files import bz2_file_bytes_reader, files_in_dir, load_set_from_txt_file, \
-    load_dict_from_txt_file, txt_file_writer, txt_file_reader, path_exists, save_pkl_file
+    load_dict_from_txt_file, txt_file_writer, txt_file_reader, path_exists
 from scrappybara.utils.mutables import add_in_dict_set, reverse_dict
 from scrappybara.utils.timer import Timer
 
@@ -292,6 +292,4 @@ def extract_forms(resources_dir):
     with txt_file_writer(reports_dir / 'form_titles.txt') as report:
         for form, eids in sorted(form_eids.items(), key=lambda x: len(x[1]), reverse=True):
             report.write('%s\t%d\t%s\n' % (form, len(eids), str({eid_title[eid] for eid in eids})))
-    # Release to Data
-    save_pkl_file(form_eids, cfg.DATA_DIR / 'entities' / 'form_eids.pkl')
     print('Extracted {:,} forms in total in {}'.format(len(form_eids), timer.total_time))
