@@ -21,9 +21,9 @@ class Tower(object):
         re.compile(r'[a-z]+=[^"\s]+'),
     ]
 
-    def __init__(self, resources_dir, gpu_id, batch_size):
+    def __init__(self, tower_id, resources_dir, batch_size):
         self.__data_path = pathlib.Path(resources_dir) / 'json'
-        self.__report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / ('ied_bag_%d.txt' % gpu_id)
+        self.__report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / ('ied_bag_%d.txt' % tower_id)
         self.__pipe = LexemePipeline(batch_size)
 
     def __call__(self, filename, title_eid):
@@ -54,30 +54,30 @@ class Tower(object):
         return total_txts
 
 
-def extract_lexeme_bags(resources_dir, nb_gpus, gpu_id, batch_size):
-    """This process can be towered (one thread per GPU).
+def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
+    """This process can be towered (one tower per GPU).
     Just indicate the total number of GPUs participating in the overall operation & the gpu_id for this tower.
     Towers (threads) are then run manually from CLI, one per GPU.
     Hint: don't forget to specify the visible GPU for one tower with "CUDA_VISIBLE_DEVICES=" in the environment.
     """
     # Parse args
-    nb_gpus = int(nb_gpus)
-    gpu_id = int(gpu_id)
+    tower_id = int(tower_id)
+    nb_towers = int(nb_towers)
     batch_size = int(batch_size)
     # Prep
     timer = Timer()
     re_filename = re.compile(r'enwiki-latest-pages-articles(\d+)\.xml-[p\d]+\.bz2')
     eid_title = load_dict_from_txt_file(cfg.REPORTS_DIR / 'extract_forms' / 'eid_title.txt', key_type=int)
     title_eid = reverse_dict(eid_title)
-    process = Tower(resources_dir, gpu_id, batch_size)
+    process = Tower(tower_id, resources_dir, batch_size)
     # Running tower
-    print('Running tower %d...' % gpu_id)
+    print('Running tower %d...' % tower_id)
     print()
     nb_texts_processed = 0
     for filename in [fn for fn in files_in_dir(resources_dir + '/dump') if fn.endswith('.bz2')]:
         file_match = re.fullmatch(re_filename, filename)
         file_nb = int(file_match.group(1))
-        if file_nb % nb_gpus != gpu_id:
+        if file_nb % nb_towers != tower_id:
             continue
         print('Processing "%s"...' % filename)
         nb_texts_in_file = process(filename, title_eid)
