@@ -50,7 +50,6 @@ class Tower(object):
                         report.write('%d\t%s\n' % (eids[idx], str(bag.most_common())))
                     total_txts += len(bags)
                     print('\r{:,}'.format(total_txts), end='')
-        print('\n')
         return total_txts
 
 
@@ -80,8 +79,7 @@ def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
         if file_nb % nb_towers != tower_id:
             continue
         print('Processing "%s"...' % filename)
-        nb_texts_in_file = process(filename, title_eid)
-        nb_texts_processed += nb_texts_in_file
-        print('{:,} articles processed in {}'.format(nb_texts_in_file, timer.lap_time))
+        nb_texts_processed += process(filename, title_eid)
+        print('Batch processed in {}'.format(timer.lap_time))
         print()
     print('Total: {:,} articles processed in {}'.format(nb_texts_processed, timer.total_time))
