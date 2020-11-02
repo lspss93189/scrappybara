@@ -27,7 +27,10 @@ class Tower(object):
         self.__processed_eids = set()
 
     def __call__(self, filename, title_eid):
-        """Extracts bag of lexemes & writes it in a report"""
+        """Extracts bag of lexemes & writes it in a report.
+        If the process crashed, don't forget to delete incomplete reports prior to run this.
+        Incomplete reports are the last edited (one per tower).
+        """
         total_txts = 0
         report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / (filename[:-4] + '.txt')
         if not path_exists(report_path):
@@ -81,7 +84,12 @@ def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
         if file_nb % nb_towers != tower_id:
             continue
         print('Processing "%s"...' % filename)
-        nb_texts_processed += process(filename, title_eid)
-        print('Batch processed in {}'.format(timer.lap_time))
+        nb_texts_processed_in_file = process(filename, title_eid)
+        if nb_texts_processed_in_file:
+            nb_texts_processed += nb_texts_processed_in_file
+            print()
+            print('Batch processed in {}'.format(timer.lap_time))
+        else:
+            print('File found: skiping')
         print()
     print('Total: {:,} articles processed in {}'.format(nb_texts_processed, timer.total_time))
