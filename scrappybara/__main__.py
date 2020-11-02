@@ -1,15 +1,17 @@
 if __name__ == "__main__":
     import sys
     from scrappybara.cli.download import download
-    from scrappybara.cli.extract_items import extract_items
     from scrappybara.cli.extract_classes import extract_classes
+    from scrappybara.cli.extract_items import extract_items
     from scrappybara.cli.extract_forms import extract_forms
+    from scrappybara.cli.extract_lexeme_bags import extract_lexeme_bags
 
     commands = {
         'download': download,
         'extract_classes': extract_classes,
         'extract_items': extract_items,
         'extract_forms': extract_forms,
+        'extract_lexeme_bags': extract_lexeme_bags,
     }
 
     if len(sys.argv) == 1:
