@@ -5,6 +5,7 @@ if __name__ == "__main__":
     from scrappybara.cli.extract_items import extract_items
     from scrappybara.cli.extract_forms import extract_forms
     from scrappybara.cli.extract_lexeme_bags import extract_lexeme_bags
+    from scrappybara.cli.create_vectors import create_vectors
 
     commands = {
         'download': download,
@@ -12,6 +13,7 @@ if __name__ == "__main__":
         'extract_items': extract_items,
         'extract_forms': extract_forms,
         'extract_lexeme_bags': extract_lexeme_bags,
+        'create_vectors': create_vectors,
     }
 
     if len(sys.argv) == 1:

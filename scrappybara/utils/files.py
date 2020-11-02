@@ -25,6 +25,11 @@ def txt_file_writer(path):
     return open(path, 'w', encoding=cfg.ENCODING)
 
 
+def txt_file_appender(path):
+    """Appends to a text file"""
+    return open(path, 'a', encoding=cfg.ENCODING)
+
+
 def bz2_file_reader(path):
     """Opens compressed file .bz2"""
     return bz2.open(path, 'rt')
