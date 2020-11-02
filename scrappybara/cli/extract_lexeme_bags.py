@@ -4,7 +4,7 @@ import re
 
 import scrappybara.config as cfg
 from scrappybara.pipeline.toolkit_pipeline import LexemePipeline
-from scrappybara.utils.files import files_in_dir, bz2_file_reader, load_dict_from_txt_file, txt_file_writer
+from scrappybara.utils.files import files_in_dir, bz2_file_reader, load_dict_from_txt_file, txt_file_writer, path_exists
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
@@ -21,35 +21,37 @@ class Tower(object):
         re.compile(r'[a-z]+=[^"\s]+'),
     ]
 
-    def __init__(self, tower_id, resources_dir, batch_size):
-        self.__data_path = pathlib.Path(resources_dir) / 'json'
-        self.__report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / ('ied_bag_%d.txt' % tower_id)
+    def __init__(self, resources_dir, batch_size):
         self.__pipe = LexemePipeline(batch_size)
+        self.__data_path = pathlib.Path(resources_dir) / 'json'
+        self.__processed_eids = set()
 
     def __call__(self, filename, title_eid):
         """Extracts bag of lexemes & writes it in a report"""
         total_txts = 0
-        with txt_file_writer(self.__report_path) as report:
-            for batch in files_in_dir(self.__data_path / filename):
-                for file in files_in_dir(self.__data_path / filename / batch):
-                    texts = []
-                    eids = []
-                    with bz2_file_reader(self.__data_path / filename / batch / file) as data:
-                        for line in data:
-                            obj = json.loads(line)
-                            title = obj['title']
-                            # Only process texts that maps to an entity ID
-                            if title in title_eid:
-                                text = obj['text']
-                                for d in self.__deletes:
-                                    text = re.sub(d, '', text)
-                                texts.append(text)
-                                eids.append(title_eid[title])
-                    bags = self.__pipe(texts)
-                    for idx, bag in enumerate(bags):
-                        report.write('%d\t%s\n' % (eids[idx], str(bag.most_common())))
-                    total_txts += len(bags)
-                    print('\r{:,}'.format(total_txts), end='')
+        report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / (filename[:-4] + '.txt')
+        if not path_exists(report_path):
+            with txt_file_writer(report_path) as report:
+                for batch in files_in_dir(self.__data_path / filename):
+                    for file in files_in_dir(self.__data_path / filename / batch):
+                        texts = []
+                        eids = []
+                        with bz2_file_reader(self.__data_path / filename / batch / file) as data:
+                            for line in data:
+                                obj = json.loads(line)
+                                title = obj['title']
+                                # Only process texts that maps to an entity ID
+                                if title in title_eid and title_eid[title]:
+                                    text = obj['text']
+                                    for d in self.__deletes:
+                                        text = re.sub(d, '', text)
+                                    texts.append(text)
+                                    eids.append(title_eid[title])
+                        bags = self.__pipe(texts)
+                        for idx, bag in enumerate(bags):
+                            report.write('%d\t%s\n' % (eids[idx], str(bag.most_common())))
+                        total_txts += len(bags)
+                        print('\r{:,}'.format(total_txts), end='')
         return total_txts
 
 
@@ -68,7 +70,7 @@ def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
     re_filename = re.compile(r'enwiki-latest-pages-articles(\d+)\.xml-[p\d]+\.bz2')
     eid_title = load_dict_from_txt_file(cfg.REPORTS_DIR / 'extract_forms' / 'eid_title.txt', key_type=int)
     title_eid = reverse_dict(eid_title)
-    process = Tower(tower_id, resources_dir, batch_size)
+    process = Tower(resources_dir, batch_size)
     # Running tower
     print('Running tower %d...' % tower_id)
     print()
