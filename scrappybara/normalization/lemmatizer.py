@@ -31,6 +31,7 @@ class Lemmatizer(object):
 
     def __call__(self, word, tag):
         """Returns lemma & suffix (suffix can be None)"""
+        word = word.lower()
 
         # FULL MATCH
         # -------------------------------------------------------------------------->
