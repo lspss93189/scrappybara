@@ -19,12 +19,14 @@ class _Parse(object):
         self.__dep_codes = dep_codes
         self.__char_codes = char_codes
         self.__word_vectors = word_vectors
-        self.tags = [Tag(code) for code in tag_codes[1:seq_length - 1]]
-        self.__deps = [Dep(code) for code in dep_codes[1:seq_length - 1]]
-        self.__buffer = collections.deque([idx for idx in range(seq_length - 2) if self.__deps[idx] != Dep.NODEP])
+        # Prepare initial state: buffer & stack idxs are 0-idx without considering padding
+        self.__deps = [Dep(code) for code in dep_codes[1:seq_length + 1]]
+        self.__buffer = collections.deque([idx for idx in range(seq_length) if self.__deps[idx] != Dep.NODEP])
         self.__stack = collections.deque([])
         if self.__buffer:
             self.__shift()
+        # Results
+        self.tags = [Tag(code) for code in tag_codes[1:seq_length + 1]]
         self.arcs = []  # Tuples (dep, parent_idx, child_idx)
 
     def __pdep(self, child_idx):

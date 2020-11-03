@@ -39,7 +39,7 @@ class ParsingPipeline(LabelledSentencePipeline):
             tokens = [input_sentence]
         else:
             tokens = self._sentencize(input_sentence)
-        standards = [self.__standardize(tokens[0])]
+        standards = [[self.__standardize(token) for token in tokens[0]]]
         tags, idx_trees, node_dicts, _ = self._parse_tokens(tokens, standards)
         return tokens[0], tags[0], idx_trees[0], node_dicts[0]
 
