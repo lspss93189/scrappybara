@@ -16,7 +16,7 @@ class EntityLinker(object):
         self.__eid_vector = eid_vector
 
     def __call__(self, node_dict, node_tree, doc_vector):
-        """Returns entities found in a single sentence"""
+        """Returns list of entities found in a single sentence"""
         noun_parts = {node: [] for node in node_dict.values() if node.tag in self.__noun_tags}  # node => list of parts
         have_parent_noun = set()
         for part in noun_parts.keys():

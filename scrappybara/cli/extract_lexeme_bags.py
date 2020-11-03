@@ -3,7 +3,7 @@ import pathlib
 import re
 
 import scrappybara.config as cfg
-from scrappybara.pipeline.toolkit_pipeline import LexemePipeline
+from scrappybara.pipeline.lexeme_pipeline import LexemePipeline
 from scrappybara.utils.files import files_in_dir, bz2_file_reader, load_dict_from_txt_file, txt_file_writer, path_exists
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer

@@ -1,6 +1,9 @@
+import collections
+
 import scrappybara.config as cfg
 from scrappybara.pipeline.parsing_pipeline import ParsingPipeline
 from scrappybara.syntax.tagger import Tagger
+from scrappybara.syntax.tags import LEX_TAGS
 from scrappybara.utils.multithreading import run_multithreads
 
 
@@ -16,15 +19,19 @@ class LexemePipeline(ParsingPipeline):
         token_lists, sent_ranges = self._extract_sentences(texts)
         standard_lists = run_multithreads(token_lists, self._standardize, cfg.NB_PROCESSES)
         tag_lists = self.__tag(token_lists, standard_lists)
+        return self._extract_lexeme_bags(standard_lists, tag_lists, sent_ranges)
+
+    def __count_text_lexemes(self, text_pack):
+        """Multithreaded process that counts lexemes in a single text"""
+        standards, tags = text_pack
+        lexemes = [(self._lemmatize(standard, tag)[0]) for standard, tag in zip(standards, tags) if tag in LEX_TAGS]
+        return collections.Counter(lexemes)
+
+    def _extract_lexeme_bags(self, standard_lists, tag_lists, sent_ranges):
+        """Returns a bag of lexemes (collections.Counter) corresponding to single text"""
         doc_packs = []
         for start, end in sent_ranges:
             standards = [standard for standard_list in standard_lists[start:end] for standard in standard_list]
             tags = [tag for tag_list in tag_lists[start:end] for tag in tag_list]
             doc_packs.append((standards, tags))
-        return run_multithreads(doc_packs, self._count_doc_lexemes, cfg.NB_PROCESSES)
-
-    def _count_doc_lexemes(self, doc_pack):
-        """Multithreaded process that counts lexemes in a single doc"""
-        standards, tags = doc_pack
-        lemma_tag_list = [(self._lemmatize(standard, tag)[0], tag) for standard, tag in zip(standards, tags)]
-        return self._count_lexemes(lemma_tag_list)
+        return run_multithreads(doc_packs, self.__count_text_lexemes, cfg.NB_PROCESSES)

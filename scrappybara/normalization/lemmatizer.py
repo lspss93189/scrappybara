@@ -30,7 +30,9 @@ class Lemmatizer(object):
         self.__lemma_pp = lemma_pp
 
     def __call__(self, standard, tag):
-        """Returns lemma & suffix (suffix can be None)"""
+        """Returns lemma & suffix (suffix can be None)
+        This lemmatizer expects a standardized orthography, hence the "standard" token argument (lowercase string).
+        """
 
         # FULL MATCH
         # -------------------------------------------------------------------------->

@@ -1,21 +1,19 @@
-import collections
 import itertools
 
 import scrappybara.config as cfg
 from scrappybara.langmodel.language_model import LanguageModel
+from scrappybara.normalization.standardizer import Standardizer
 from scrappybara.pipeline.labelled_sentence_pipeline import LabelledSentencePipeline
 from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.syntax.charset import Charset
 from scrappybara.syntax.models import PDepsModel, TransModel, PTagsModel
 from scrappybara.syntax.parser import Parser
-from scrappybara.syntax.tags import LEX_TAGS
 from scrappybara.syntax.wordset import Wordset
-from scrappybara.normalization.standardizer import Standardizer
 from scrappybara.utils.multithreading import run_multithreads
 
 
 class ParsingPipeline(LabelledSentencePipeline):
-    """Provides tools necessary to parse raw text, and few other goodies"""
+    """Provides tools necessary to parse raw text"""
 
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}  # Used to split sentences again
 
@@ -84,9 +82,3 @@ class ParsingPipeline(LabelledSentencePipeline):
         node_dict_node_tree_list = run_multithreads(sent_packs, self._process_sentence, cfg.NB_PROCESSES)
         node_dicts, node_trees = zip(*node_dict_node_tree_list)
         return tag_lists, idx_tree_lists, node_dicts, node_trees
-
-    @staticmethod
-    def _count_lexemes(lemma_tag_list):
-        """Counts lemmas with an appropriate tag"""
-        lexemes = [lemma for lemma, tag in lemma_tag_list if tag in LEX_TAGS]
-        return collections.Counter(lexemes)

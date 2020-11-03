@@ -2,14 +2,14 @@ import sys
 
 import scrappybara.config as cfg
 from scrappybara.pipeline.document import Document
-from scrappybara.pipeline.parsing_pipeline import ParsingPipeline
+from scrappybara.pipeline.lexeme_pipeline import LexemePipeline
 from scrappybara.pipeline.sentence import Sentence
 from scrappybara.semantics.entity_linker import EntityLinker
 from scrappybara.utils.files import txt_file_reader, load_pkl_file
 from scrappybara.utils.multithreading import run_multithreads
 
 
-class Pipeline(ParsingPipeline):
+class Pipeline(LexemePipeline):
     """Production pipeline"""
 
     def __init__(self, batch_size=128):
@@ -29,31 +29,36 @@ class Pipeline(ParsingPipeline):
         """Processes all texts in memory & returns a list of documents"""
         token_lists, sent_ranges = self._extract_sentences(texts)
         standard_lists = run_multithreads(token_lists, self._standardize, cfg.NB_PROCESSES)
-        _, _, node_dicts, node_trees = self._parse_tokens(token_lists, standard_lists)
-        # Create documents
-        docs = []
-        for start, end in sent_ranges:
-            doc_node_dicts = node_dicts[start:end]
-            doc_node_trees = node_trees[start:end]
-            sentences = []
-            # Link entities
-            vector = self._vectorize(doc_node_dicts)
-            for idx, doc_node_dict in enumerate(doc_node_dicts):
-                entities = self.__link_entities(doc_node_dict, doc_node_trees[idx], vector)
-                sentences.append(Sentence(entities))
-            docs.append(Document(sentences))
-        return docs
+        tag_lists, _, node_dicts, node_trees = self._parse_tokens(token_lists, standard_lists)
+        bags = self._extract_lexeme_bags(standard_lists, tag_lists, sent_ranges)
+        vectors = run_multithreads(bags, self.__vectorize, cfg.NB_PROCESSES)
+        entity_lists = self.__link_entities(node_dicts, node_trees, vectors)
+        return self.__create_docs(entity_lists, sent_ranges)
 
-    def _vectorize(self, node_dicts):
-        """Returns sparse vector of a text.
-        A node_dict represents a sentence.
-        """
-        lemma_tag_list = [(node.lemma, node.tag) for node_dict in node_dicts for node in node_dict.values()]
-        lexeme_counter = self._count_lexemes(lemma_tag_list)
-        total_count = sum(lexeme_counter.values())
+    def __vectorize(self, bag):
+        """Returns sparse vector of a text"""
+        total_count = sum(bag.values())
         vector = {}  # idx of lexeme => score tf.idf
-        for lexeme, count in lexeme_counter.items():
+        for lexeme, count in bag.items():
             if lexeme in self.__feature_idx_idf:
                 idx, idf = self.__feature_idx_idf[lexeme]
                 vector[idx] = (count / total_count) * idf
         return vector
+
+    def __link_entities(self, node_dicts, node_trees, sent_ranges, vectors):
+        """Link entities in a single text"""
+        sent_packs = []
+        for text_idx, start_end in enumerate(sent_ranges):
+            for sent_idx in range(*start_end):
+                sent_packs.append((node_dicts[sent_idx], node_trees[sent_idx], vectors[text_idx]))
+        return run_multithreads(sent_packs, self.__link_entities, cfg.NB_PROCESSES)
+
+    @staticmethod
+    def __create_docs(entity_lists, sent_ranges):
+        docs = []
+        for text_idx, start_end in enumerate(sent_ranges):
+            sents = []
+            for sent_idx in range(*start_end):
+                sents.append(Sentence(entity_lists[sent_idx]))
+            docs.append(Document(sents))
+        return docs
