@@ -50,7 +50,7 @@ class Tower(object):
                                         text = re.sub(d, '', text)
                                     texts.append(text)
                                     eids.append(title_eid[title])
-                        bags = self.__pipe(texts)
+                        bags = self.__pipe(texts)  # Lexemes are standardized
                         for idx, bag in enumerate(bags):
                             report.write('%d\t%s\n' % (eids[idx], str(bag.most_common())))
                         total_txts += len(bags)
@@ -89,6 +89,7 @@ def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
             nb_texts_processed += nb_texts_processed_in_file
             print()
             print('Batch processed in {}'.format(timer.lap_time))
+            print('Cumulated: {:,}'.format(nb_texts_processed))
         else:
             print('File found: skiping')
         print()

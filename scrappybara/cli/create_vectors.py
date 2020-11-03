@@ -3,9 +3,8 @@ import math
 import re
 
 import scrappybara.config as cfg
-from scrappybara.langmodel.language_model import LanguageModel
-from scrappybara.normalization.standardizer import Standardizer
-from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, save_pkl_file, txt_file_reader
+from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, save_pkl_file, txt_file_reader, \
+    files_in_dir
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
@@ -41,23 +40,17 @@ def create_vectors():
     # Read lexemes
     print('Reading lexemes from bags...')
     bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
-    standardize = Standardizer(LanguageModel())
     lexeme_total_count = collections.Counter()  # lexeme => total count
     lexeme_nb_docs = collections.Counter()  # lexeme => nb docs
     eid_bag = {}  # entity id => bag of lexemes
     total_docs = 0
-    # for file in files_in_dir(bags_path):
-    file = 'enwiki-latest-pages-articles17.xml-p23570393p23716197.txt'
-    for eid, bag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
-        total_docs += 1
-        new_bag = collections.Counter()
-        for lexeme, count in bag:
-            standard = standardize(lexeme)
-            lexeme_total_count[standard] += count
-            lexeme_nb_docs[standard] += 1
-            new_bag[standard] += count
-        eid_bag[eid] = new_bag.most_common()
-    del standardize
+    for file in files_in_dir(bags_path):
+        for eid, bag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
+            total_docs += 1
+            eid_bag[eid] = bag
+            for lexeme, count in bag:
+                lexeme_total_count[lexeme] += count
+                lexeme_nb_docs[lexeme] += 1
     print('{:,} lexemes extracted in {}'.format(len(lexeme_nb_docs), timer.lap_time))
     print()
     # Calculate IDF scores
