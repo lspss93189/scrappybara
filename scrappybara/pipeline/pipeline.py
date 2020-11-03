@@ -32,7 +32,7 @@ class Pipeline(LexemePipeline):
         tag_lists, _, node_dicts, node_trees = self._parse_tokens(token_lists, standard_lists)
         bags = self._extract_lexeme_bags(standard_lists, tag_lists, sent_ranges)
         vectors = run_multithreads(bags, self.__vectorize, cfg.NB_PROCESSES)
-        entity_lists = self.__link_entities(node_dicts, node_trees, vectors)
+        entity_lists = self.__link_all_entities(node_dicts, node_trees, sent_ranges, vectors)
         return self.__create_docs(entity_lists, sent_ranges)
 
     def __vectorize(self, bag):
@@ -45,8 +45,8 @@ class Pipeline(LexemePipeline):
                 vector[idx] = (count / total_count) * idf
         return vector
 
-    def __link_entities(self, node_dicts, node_trees, sent_ranges, vectors):
-        """Link entities in a single text"""
+    def __link_all_entities(self, node_dicts, node_trees, sent_ranges, vectors):
+        """Link entities in every texts, sentence by sentence"""
         sent_packs = []
         for text_idx, start_end in enumerate(sent_ranges):
             for sent_idx in range(*start_end):

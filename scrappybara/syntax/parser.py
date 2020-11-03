@@ -100,7 +100,7 @@ class Parser(object):
 
     def __call__(self, token_lists, standard_lists):
         """Parses sentences by batch"""
-        mats = run_multithreads(zip(token_lists, standard_lists), self.__vectorize_sentence, cfg.NB_PROCESSES)
+        mats = run_multithreads(list(zip(token_lists, standard_lists)), self.__vectorize_sentence, cfg.NB_PROCESSES)
         batches = make_batches(mats, self.__batch_size)
         parses = []
         for batch in batches:
@@ -121,9 +121,7 @@ class Parser(object):
         tree_lists = run_multithreads(parses, _build_tree, cfg.NB_PROCESSES)
         return tag_lists, tree_lists
 
-    def __vectorize_sentence(self, sent_pack):
-        """Multithreaded"""
-        tokens, standards = sent_pack
+    def __vectorize_sentence(self, tokens, standards):
         return vectorize_sentence(tokens, standards, self.__charset, self.__wordset)
 
     def __predict_tags(self, char_codes, word_vectors):

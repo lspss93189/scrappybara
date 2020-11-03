@@ -26,9 +26,7 @@ class LabelledSentencePipeline(object):
         self.__fix = Fixer(adjs, nouns)
         self.__canonicalize = Canonicalizer(self._lemmatize)
 
-    def _process_sentence(self, sentence_pack):
-        """Args are packed into a list of args so this process can be multithreaded"""
-        tokens, standards, tags, idx_tree = sentence_pack
+    def _process_sentence(self, tokens, standards, tags, idx_tree):
         # Nofification
         node_dict, node_tree = self.__nodify(tokens, standards, tags, idx_tree)
         # Lemmatization

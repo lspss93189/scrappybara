@@ -15,7 +15,7 @@ class EntityLinker(object):
         self.__form_eids = form_eids
         self.__eid_vector = eid_vector
 
-    def __call__(self, node_dict, node_tree, doc_vector):
+    def __call__(self, node_dict, node_tree, vector):
         """Returns list of entities found in a single sentence"""
         noun_parts = {node: [] for node in node_dict.values() if node.tag in self.__noun_tags}  # node => list of parts
         have_parent_noun = set()
@@ -30,7 +30,7 @@ class EntityLinker(object):
         # Register entities
         entities = []
         for root in [n for n in noun_parts if n not in have_parent_noun]:
-            entity = self.__chunk(root, noun_parts, node_tree, doc_vector)
+            entity = self.__chunk(root, noun_parts, node_tree, vector)
             if entity is not None:
                 entities.append(entity)
         return entities
@@ -39,7 +39,7 @@ class EntityLinker(object):
         """Tries to link a form to an entity.
         Returns None if not possible.
         """
-        scores = [cosine(vector, self.__eid_vector.get(eid, {})) for eid in eids]
+        scores = [cosine(vector, self.__eid_vector[eid]) for eid in eids]
         if max(scores) > self.__linking_threshold:
             selected_eid = eids[np.argmax(scores)]
             return Entity(selected_eid, form)
@@ -66,9 +66,10 @@ class EntityLinker(object):
         parts.sort(key=lambda x: x.idx)
         for i in range(len(parts) - 1):
             form = ' '.join([node.standard for node in parts[i:]])
-            eids = self.__form_eids[form]
-            entity = self.__link_form_to_entity(form, eids, vector)
-            if entity is not None:
-                root.entity = entity
-                return entity
+            if form in self.__form_eids:
+                eids = self.__form_eids[form]
+                entity = self.__link_form_to_entity(form, eids, vector)
+                if entity is not None:
+                    root.entity = entity
+                    return entity
         return None

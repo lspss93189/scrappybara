@@ -4,10 +4,9 @@ import numpy as np
 def divide_list(items, nb_lists):
     """Divides list into equal lists"""
     assert nb_lists > 0
-    len_list = len(items)
-    if nb_lists <= len_list:
+    if nb_lists <= len(items):
         result = []
-        ranges = np.linspace(0, len_list, num=nb_lists + 1)
+        ranges = np.linspace(0, len(items), num=nb_lists + 1)
         for i in range(len(ranges) - 1):
             result.append(items[int(ranges[i]):int(ranges[i + 1])])
     else:

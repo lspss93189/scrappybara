@@ -21,14 +21,13 @@ class LexemePipeline(ParsingPipeline):
         tag_lists = self.__tag(token_lists, standard_lists)
         return self._extract_lexeme_bags(standard_lists, tag_lists, sent_ranges)
 
-    def __count_text_lexemes(self, text_pack):
-        """Multithreaded process that counts lexemes in a single text"""
-        standards, tags = text_pack
+    def __count_text_lexemes(self, standards, tags):
+        """Counts lexemes in a single text"""
         lexemes = [(self._lemmatize(standard, tag)[0]) for standard, tag in zip(standards, tags) if tag in LEX_TAGS]
         return collections.Counter(lexemes)
 
     def _extract_lexeme_bags(self, standard_lists, tag_lists, sent_ranges):
-        """Returns a bag of lexemes (collections.Counter) corresponding to single text"""
+        """Returns a bag of lexemes (collections.Counter) corresponding to a portion of a text"""
         doc_packs = []
         for start, end in sent_ranges:
             standards = [standard for standard_list in standard_lists[start:end] for standard in standard_list]

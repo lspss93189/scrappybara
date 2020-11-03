@@ -13,10 +13,14 @@ class _Thread(threading.Thread):
         self.output_items = []
 
     def run(self):
-        self.output_items = [self.__process(item) for item in self.__input_items]
+        if isinstance(self.__input_items[0], tuple):
+            self.output_items = [self.__process(*item) for item in self.__input_items]
+        else:
+            self.output_items = [self.__process(item) for item in self.__input_items]
 
 
 def run_multithreads(items, process, nb_threads):
+    """Items can be packs of arguments (a tuple), or a single var"""
     items_lists = divide_list(items, nb_threads)
     nb_threads = []
     output_items = []
