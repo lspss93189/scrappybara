@@ -37,3 +37,4 @@ NB_TAGS = len([tag for tag in Tag])
 
 NOUN_TAGS = {Tag.NOUN, Tag.PROPN, Tag.PRON, Tag.SYM, Tag.NUM}
 PROP_TAGS = NOUN_TAGS | {Tag.ADJ}
+LEX_TAGS = {Tag.NOUN, Tag.PROPN, Tag.ADJ, Tag.VERB}  # Tags for lexemes

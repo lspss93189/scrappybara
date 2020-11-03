@@ -8,15 +8,15 @@ from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.syntax.charset import Charset
 from scrappybara.syntax.models import PDepsModel, TransModel, PTagsModel
 from scrappybara.syntax.parser import Parser
-from scrappybara.syntax.tags import Tag
+from scrappybara.syntax.tags import LEX_TAGS
 from scrappybara.syntax.wordset import Wordset
+from scrappybara.normalization.standardizer import Standardizer
 from scrappybara.utils.multithreading import run_multithreads
 
 
 class ParsingPipeline(LabelledSentencePipeline):
     """Provides tools necessary to parse raw text, and few other goodies"""
 
-    __lexeme_tags = {Tag.NOUN, Tag.PROPN, Tag.ADJ, Tag.VERB}
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}  # Used to split sentences again
 
     def __init__(self, batch_size=128):
@@ -24,13 +24,14 @@ class ParsingPipeline(LabelledSentencePipeline):
         super().__init__(lm)
         # Load data
         self._charset = Charset().load()
-        self._wordset = Wordset(lm).load()
+        self._wordset = Wordset().load()
         self._ptags_model = PTagsModel(len(self._charset)).load()
         pdeps_model = PDepsModel(len(self._charset)).load()
         trans_model = TransModel(len(self._charset)).load()
         # Pipeline
-        self._sentencize = Sentencizer()
+        self.__standardize = Standardizer(lm)
         self.__parse = Parser(self._charset, self._wordset, self._ptags_model, pdeps_model, trans_model, batch_size)
+        self._sentencize = Sentencizer()
 
     def __call__(self, input_sentence):
         """Parses a single sentence.
@@ -40,7 +41,8 @@ class ParsingPipeline(LabelledSentencePipeline):
             tokens = [input_sentence]
         else:
             tokens = self._sentencize(input_sentence)
-        tags, idx_trees, node_dicts, _ = self._parse_tokens(tokens)
+        standards = [self.__standardize(tokens[0])]
+        tags, idx_trees, node_dicts, _ = self._parse_tokens(tokens, standards)
         return tokens[0], tags[0], idx_trees[0], node_dicts[0]
 
     def __shorten_sentences(self, token_lists):
@@ -71,15 +73,20 @@ class ParsingPipeline(LabelledSentencePipeline):
             total_sents = new_total
         return [token_lists for group in tokens for token_lists in group], sent_ranges
 
-    def _parse_tokens(self, token_lists):
+    def _standardize(self, tokens):
+        """Standardizes a single sentence"""
+        return [self.__standardize(token) for token in tokens]
+
+    def _parse_tokens(self, token_lists, standard_lists):
         """Parses multiple sentences"""
-        tags, idx_trees = self.__parse(token_lists)
-        sent_packs = list(zip(token_lists, tags, idx_trees))
+        tag_lists, idx_tree_lists = self.__parse(token_lists, standard_lists)
+        sent_packs = list(zip(token_lists, standard_lists, tag_lists, idx_tree_lists))
         node_dict_node_tree_list = run_multithreads(sent_packs, self._process_sentence, cfg.NB_PROCESSES)
         node_dicts, node_trees = zip(*node_dict_node_tree_list)
-        return tags, idx_trees, node_dicts, node_trees
+        return tag_lists, idx_tree_lists, node_dicts, node_trees
 
-    def _count_lexemes(self, lemma_tag_list):
+    @staticmethod
+    def _count_lexemes(lemma_tag_list):
         """Counts lemmas with an appropriate tag"""
-        lexemes = [lemma for lemma, tag in lemma_tag_list if tag in self.__lexeme_tags]
+        lexemes = [lemma for lemma, tag in lemma_tag_list if tag in LEX_TAGS]
         return collections.Counter(lexemes)

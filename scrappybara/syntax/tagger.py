@@ -13,9 +13,9 @@ class Tagger(object):
         self.__ptags_model = ptags_model
         self.__batch_size = batch_size
 
-    def __call__(self, token_lists):
+    def __call__(self, token_lists, standard_lists):
         """Tags sentences by batch"""
-        mats = run_multithreads(token_lists, self.__vectorize_sentence, cfg.NB_PROCESSES)
+        mats = run_multithreads(zip(token_lists, standard_lists), self.__vectorize_sentence, cfg.NB_PROCESSES)
         batches = make_batches(mats, self.__batch_size)
         tag_lists = []
         for batch in batches:
@@ -25,8 +25,8 @@ class Tagger(object):
                 tag_lists.append([Tag(code) for code in tag_codes[idx][1:seq_length - 1]])
         return tag_lists
 
-    def __vectorize_sentence(self, tokens):
-        return vectorize_sentence(tokens, self.__charset, self.__wordset)
+    def __vectorize_sentence(self, tokens, standards):
+        return vectorize_sentence(tokens, standards, self.__charset, self.__wordset)
 
     def __predict_tags(self, char_codes, word_vectors):
         return self.__ptags_model.predict(char_codes, word_vectors)

@@ -63,20 +63,19 @@ def make_masks(idx_1, idx_2):
     return _make_mask(idx_1), _make_mask(idx_2)
 
 
-def vectorize_sentence(tokens, charset, wordset):
+def vectorize_sentence(tokens, standards, charset, wordset):
     """Returns sequence length & padded numpy arrays"""
     if len(tokens) > cfg.MAX_SENT_LENGTH:
         raise SentenceTooLongError()
-    tokens = ['ʃʃʃ'] + tokens + ['ʄʄʄ']
-    char_codes = _pad_char_codes([_encode_chars(token, charset) for token in tokens])
-    word_vectors = _pad_word_vectors([wordset[token] for token in tokens])
+    char_codes = _pad_char_codes([_encode_chars(token, charset) for token in ['ʃʃʃ'] + tokens + ['ʄʄʄ']])
+    word_vectors = _pad_word_vectors([wordset[standard] for standard in ['ʃʃʃ'] + standards + ['ʄʄʄ']])
     return len(tokens), char_codes, word_vectors
 
 
 class _TrainingSample(object):
 
-    def __init__(self, tokens, charset, wordset):
-        _, self._char_ids, self._word_vectors = vectorize_sentence(tokens, charset, wordset)
+    def __init__(self, tokens, standards, charset, wordset):
+        _, self._char_ids, self._word_vectors = vectorize_sentence(tokens, standards, charset, wordset)
 
     @staticmethod
     def _tag_ids(tags):
@@ -89,8 +88,8 @@ class _TrainingSample(object):
 
 class PTagsSample(_TrainingSample):
 
-    def __init__(self, tokens, tags, charset, wordset):
-        super().__init__(tokens, charset, wordset)
+    def __init__(self, tokens, standards, tags, charset, wordset):
+        super().__init__(tokens, standards, charset, wordset)
         self.__tag_ids = self._tag_ids(tags)
 
     @property
@@ -100,8 +99,8 @@ class PTagsSample(_TrainingSample):
 
 class PDepsSample(_TrainingSample):
 
-    def __init__(self, tokens, tags, deps, charset, wordset):
-        super().__init__(tokens, charset, wordset)
+    def __init__(self, tokens, standards, tags, deps, charset, wordset):
+        super().__init__(tokens, standards, charset, wordset)
         self.__tag_ids = self._tag_ids(tags)
         self.__dep_ids = self._dep_ids(deps)
 
@@ -112,8 +111,8 @@ class PDepsSample(_TrainingSample):
 
 class TransSample(_TrainingSample):
 
-    def __init__(self, tokens, tags, deps, idx_1, idx_2, transition, charset, wordset):
-        super().__init__(tokens, charset, wordset)
+    def __init__(self, tokens, standards, tags, deps, idx_1, idx_2, transition, charset, wordset):
+        super().__init__(tokens, standards, charset, wordset)
         self.__tag_ids = self._tag_ids(tags)
         self.__dep_ids = self._dep_ids(deps)
         self.__mask_1, self.__mask_2 = make_masks(idx_1 + 1, idx_2 + 1)

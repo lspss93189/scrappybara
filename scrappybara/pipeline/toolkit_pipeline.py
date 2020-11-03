@@ -14,16 +14,17 @@ class LexemePipeline(ParsingPipeline):
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of lexeme bags"""
         token_lists, sent_ranges = self._extract_sentences(texts)
-        tag_lists = self.__tag(token_lists)
+        standard_lists = run_multithreads(token_lists, self._standardize, cfg.NB_PROCESSES)
+        tag_lists = self.__tag(token_lists, standard_lists)
         doc_packs = []
         for start, end in sent_ranges:
-            tokens = [token for token_list in token_lists[start:end] for token in token_list]
+            standards = [standard for standard_list in standard_lists[start:end] for standard in standard_list]
             tags = [tag for tag_list in tag_lists[start:end] for tag in tag_list]
-            doc_packs.append((tokens, tags))
+            doc_packs.append((standards, tags))
         return run_multithreads(doc_packs, self._count_doc_lexemes, cfg.NB_PROCESSES)
 
     def _count_doc_lexemes(self, doc_pack):
-        """A multithreaded process to count lexemes in a single doc"""
-        tokens, tags = doc_pack
-        lemma_tag_list = [(self._lemmatize(token, tag)[0], tag) for token, tag in zip(tokens, tags)]
+        """Multithreaded process that counts lexemes in a single doc"""
+        standards, tags = doc_pack
+        lemma_tag_list = [(self._lemmatize(standard, tag)[0], tag) for standard, tag in zip(standards, tags)]
         return self._count_lexemes(lemma_tag_list)

@@ -28,9 +28,9 @@ class LabelledSentencePipeline(object):
 
     def _process_sentence(self, sentence_pack):
         """Args are packed into a list of args so this process can be multithreaded"""
-        tokens, tags, idx_tree = sentence_pack
+        tokens, standards, tags, idx_tree = sentence_pack
         # Nofification
-        node_dict, node_tree = self.__nodify(tokens, tags, idx_tree)
+        node_dict, node_tree = self.__nodify(tokens, standards, tags, idx_tree)
         # Lemmatization
         for node in node_dict.values():
             node.lemma, node.suffix = self._lemmatize(node.standard, node.tag)
