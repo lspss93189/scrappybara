@@ -6,8 +6,10 @@ if __name__ == "__main__":
     from scrappybara.cli.extract_bags import extract_bags
     from scrappybara.cli.push_data import push_data
     from scrappybara.cli.download import download
+    from scrappybara.cli.build_langmodel import build_langmodel
 
     commands = {
+        'build_langmodel': build_langmodel,
         'extract_classes': extract_classes,
         'extract_items': extract_items,
         'extract_forms': extract_forms,

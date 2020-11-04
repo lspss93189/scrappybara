@@ -20,7 +20,7 @@ class ModifiedKneserNeyMinOrderError(Exception):
 class LanguageModelBuilder(object):
     __smoothing_methods = {'modified_kneser_ney', 'maximum_likelihood_estimation'}
 
-    def __init__(self, max_order, smoothing='modified_kneser_ney'):
+    def __init__(self, max_order, smoothing, output_path):
         if smoothing not in self.__smoothing_methods:
             raise ArgumentValueError('smoothing', smoothing, self.__smoothing_methods)
         if smoothing == 'modified_kneser_ney' and max_order < 2:
@@ -31,6 +31,7 @@ class LanguageModelBuilder(object):
             self.__smoother = MKNSmoother
         else:
             self.__smoother = MLESmoother
+        self.__output_path = output_path  # pathlib.Path
 
     def __call__(self, text_iterator):
         """Extracts ngrams & calculates probabilities"""
@@ -59,13 +60,12 @@ class LanguageModelBuilder(object):
         print('\nCalculating probabilities...', end='')
         smoother = self.__smoother(store.ngrams, self.__max_order, cfg.NB_PROCESSES)()
         print(' [DONE]')
-        # Write ngrams of higher orders
+        # Write ngrams
         for n in range(1, self.__max_order + 1):
             self.__write_ngram_file(n, smoother.ngrams(n))
         print('Total execution time: {}'.format(timer.total_time))
 
-    @staticmethod
-    def __write_ngram_file(order, ngrams):
+    def __write_ngram_file(self, order, ngrams):
         ngram_tuples = [(ngram.text, ngram.count, ngram.proba) for ngram in ngrams if ngram.proba > 0.0]
-        save_pkl_file(ngram_tuples, cfg.DATA_DIR / 'langmodel' / '%d_grams.pkl' % order)
+        save_pkl_file(ngram_tuples, self.__output_path / ('%d_grams.pkl' % order))
         print('Wrote {:,} {}-grams'.format(len(ngrams), order))
