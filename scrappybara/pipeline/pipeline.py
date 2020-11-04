@@ -19,11 +19,12 @@ class Pipeline(LexemePipeline):
                 sys.exit('Wrong data version. Please download again: "python3 -m scrappybara download".')
         super().__init__(batch_size)
         # Load data
-        self.__feature_idx_idf = load_pkl_file(cfg.DATA_DIR / 'entities' / 'feature_idx_idf.pkl')
         form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')
-        eid_vector = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_vector.pkl')
+        feature_idx_dc = load_pkl_file(cfg.DATA_DIR / 'entities' / 'feature_idx_dc.pkl')
+        eid_featbag = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_featbag.pkl')
+        constants = load_pkl_file(cfg.DATA_DIR / 'entities' / 'vars.pkl')
         # Pipeline
-        self.__link_entities = EntityLinker(form_eids, eid_vector)
+        self.__link_entities = EntityLinker(form_eids, feature_idx_dc, eid_featbag, constants['total_docs'])
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""
@@ -31,19 +32,9 @@ class Pipeline(LexemePipeline):
         standard_lists = run_multithreads(token_lists, self._standardize, cfg.NB_PROCESSES)
         tag_lists, _, node_dicts, node_trees = self._parse_tokens(token_lists, standard_lists)
         bags = self._extract_lexeme_bags(standard_lists, tag_lists, sent_ranges)
-        vectors = run_multithreads(bags, self.__vectorize, cfg.NB_PROCESSES)
+        vectors = run_multithreads(bags, self.__link_entities.vectorize, cfg.NB_PROCESSES)
         entity_lists = self.__link_all_entities(node_dicts, node_trees, sent_ranges, vectors)
         return self.__create_docs(entity_lists, sent_ranges)
-
-    def __vectorize(self, bag):
-        """Returns sparse vector of a text"""
-        total_count = sum(bag.values())
-        vector = {}  # idx of lexeme => score tf.idf
-        for lexeme, count in bag.items():
-            if lexeme in self.__feature_idx_idf:
-                idx, idf = self.__feature_idx_idf[lexeme]
-                vector[idx] = (count / total_count) * idf
-        return vector
 
     def __link_all_entities(self, node_dicts, node_trees, sent_ranges, vectors):
         """Link entities in every texts, sentence by sentence"""

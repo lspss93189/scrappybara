@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from scrappybara.semantics.entity import Entity
@@ -11,9 +13,12 @@ class EntityLinker(object):
     __noun_tags = {Tag.NOUN, Tag.PROPN}
     __linking_threshold = 0.0  # Minimum cosine required to link an entity
 
-    def __init__(self, form_eids, eid_vector):
+    def __init__(self, form_eids, feature_idx_dc, eid_bag, total_docs):
         self.__form_eids = form_eids
-        self.__eid_vector = eid_vector
+        self.__feature_idx_dc = feature_idx_dc
+        self.__eid_bag = eid_bag
+        self.__total_docs = total_docs
+        self.__eid_vector = {}
 
     def __call__(self, node_dict, node_tree, vector):
         """Returns list of entities found in a single sentence"""
@@ -39,6 +44,16 @@ class EntityLinker(object):
         """Tries to link a form to an entity.
         Returns None if not possible.
         """
+        # Vectorize (updates cache)
+        vectors = []
+        for eid in eids:
+            if eid in self.__eid_vector:
+                vectors.append(self.__eid_vector)
+            else:
+                vector = self.vectorize(self.__eid_bag[eid])
+                vectors.append(vector)
+                self.__eid_vector[eid] = vector
+        # Disambiguate
         scores = [cosine(vector, self.__eid_vector[eid]) for eid in eids]
         if max(scores) > self.__linking_threshold:
             selected_eid = eids[np.argmax(scores)]
@@ -73,3 +88,12 @@ class EntityLinker(object):
                     root.entity = entity
                     return entity
         return None
+
+    def vectorize(self, bag):
+        """Returns sparse vector, given a bag of features"""
+        total_count = sum(bag.values())
+        vector = {}  # idx of feature => score tf.idf
+        for feature, count in [(f, c) for f, c in bag.items() if f in self.__feature_idx_dc]:
+            idx, dc = self.__feature_idx_dc[feature]
+            vector[idx] = (count / total_count) * math.log(self.__total_docs / dc)
+        return vector

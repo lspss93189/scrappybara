@@ -7,6 +7,8 @@ from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, sa
     files_in_dir
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
+from scrappybara.langmodel.language_model import LanguageModel
+from scrappybara.normalization.standardizer import Standardizer
 
 
 class FeatureSelector(object):
@@ -39,6 +41,7 @@ def push_data():
     data_dir = cfg.DATA_DIR / 'entities'
     prd_vars = {'total_docs': 0}  # constants needed to calculate vectors on production
     # Read lexemes
+    standardize = Standardizer(LanguageModel())
     print('Reading bags of lexemes...')
     bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
     lexeme_tc = collections.Counter()  # lexeme => term total count
@@ -48,6 +51,16 @@ def push_data():
     for file in files_in_dir(bags_path):
         for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
             total_docs += 1
+
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # Replace lexbag
+            new_bag = collections.Counter()
+            for lexeme, count in lexbag:
+                standard = standardize(lexeme)
+                new_bag[standard] += count
+            lexbag = new_bag.most_common()
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             eid_lexbag[eid] = lexbag
             for lexeme, count in lexbag:
                 lexeme_tc[lexeme] += count
@@ -73,7 +86,7 @@ def push_data():
             selected_lexemes_report.write(line)
         else:
             rejected_lexemes_report.write(line)
-    save_pkl_file(feature_idx_dc, data_dir / 'features.pkl')
+    save_pkl_file(feature_idx_dc, data_dir / 'feature_idx_dc.pkl')
     del lexeme_tc
     del lexeme_dc
     del lexeme_idf
@@ -86,7 +99,7 @@ def push_data():
         featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
         if len(featbag):
             eid_featbag[eid] = featbag
-    save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
+    save_pkl_file(eid_featbag, data_dir / 'eid_featbag.pkl')
     save_pkl_file(prd_vars, data_dir / 'vars.pkl')
     del feature_idx_dc
     print('{:,} initial entities'.format(len(eid_lexbag)))
@@ -107,8 +120,11 @@ def push_data():
             eids = {title_eid[title] for title in titles if title_eid[title] in eid_featbag}
             if len(eids):
                 form_eids[form] = eids
-    save_pkl_file(form_eids, data_dir / 'forms.pkl')
+    save_pkl_file(form_eids, data_dir / 'form_eids.pkl')
     print('{:,} initial forms'.format(initial_nb_forms))
     print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
     # All done
     print('All done in {}'.format(timer.total_time))
+
+
+push_data()
