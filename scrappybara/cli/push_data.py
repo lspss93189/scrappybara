@@ -10,8 +10,8 @@ from scrappybara.utils.timer import Timer
 
 
 class FeatureSelector(object):
-    __min_count = 2
-    __min_idf = 2.
+    __min_tc = 2  # minimum term's total count
+    __min_idf = 2.  # minimum term's inverse document frequency
 
     __re_rejects = [
         re.compile(r'https?://'),
@@ -20,9 +20,9 @@ class FeatureSelector(object):
     def __init__(self):
         self.__feature_idx = -1  # feature idx
 
-    def __call__(self, lexeme, count, idf):
+    def __call__(self, lexeme, tc, idf):
         """Returns feature & its idx if lexeme is selected, None otherwise"""
-        if count < self.__min_count:
+        if tc < self.__min_tc:
             return None
         if idf < self.__min_idf:
             return None
@@ -35,14 +35,14 @@ class FeatureSelector(object):
 def push_data():
     """Creates entitys' document sparse vectors"""
     timer = Timer()
-    report_dir = cfg.REPORTS_DIR / 'create_vectors'
+    report_dir = cfg.REPORTS_DIR / 'push_data'
     data_dir = cfg.DATA_DIR / 'entities'
-    prd_vars = {'total_docs': 0, 'total_counts': {}}  # to calculate vectors on production
+    prd_vars = {'total_docs': 0}  # constants needed to calculate vectors on production
     # Read lexemes
     print('Reading bags of lexemes...')
     bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
-    lexeme_tf = collections.Counter()  # lexeme => term frequency (int)
-    lexeme_df = collections.Counter()  # lexeme => document frequency (int)
+    lexeme_tc = collections.Counter()  # lexeme => term total count
+    lexeme_dc = collections.Counter()  # lexeme => term document count (int)
     eid_lexbag = {}  # entity id => bag of lexemes
     total_docs = 0
     for file in files_in_dir(bags_path):
@@ -50,46 +50,48 @@ def push_data():
             total_docs += 1
             eid_lexbag[eid] = lexbag
             for lexeme, count in lexbag:
-                lexeme_tf[lexeme] += count
-                lexeme_df[lexeme] += 1
+                lexeme_tc[lexeme] += count
+                lexeme_dc[lexeme] += 1
     prd_vars['total_docs'] = total_docs
-    print('{:,} lexemes extracted in {}'.format(len(lexeme_df), timer.lap_time))
+    print('{:,} lexemes extracted in {}'.format(len(lexeme_dc), timer.lap_time))
     print()
     # Select features
     print('Selecting features...')
     select = FeatureSelector()
-    feature_idx_df = {}  # feature => (idx, idf)
-    for lexeme, df in lexeme_df.items():
-        idx = select(lexeme, lexeme_tf[lexeme], df)
+    feature_idx_dc = {}  # feature => (idx, idf)
+    lexeme_idf = {}  # lexeme => inverse document frequency
+    for lexeme, dc in lexeme_dc.items():
+        lexeme_idf[lexeme] = math.log(total_docs / dc)
+        idx = select(lexeme, lexeme_tc[lexeme], lexeme_idf[lexeme])
         if idx is not None:
-            feature_idx_df[lexeme] = (idx, df)
+            feature_idx_dc[lexeme] = (idx, dc)
     selected_lexemes_report = txt_file_writer(report_dir / 'accepted_lexemes.txt')
     rejected_lexemes_report = txt_file_writer(report_dir / 'rejected_lexemes.txt')
-    for lexeme, df in [(lex, df) for lex, df in sorted(lexeme_df.items(), key=lambda x: x[1])]:
-        line = '%s\t%d\t%.7f\n' % (lexeme, lexeme_tf[lexeme], math.log(total_docs / df))
-        if lexeme in feature_idx_df:
+    for lexeme, dc in [(lex, df) for lex, df in sorted(lexeme_dc.items(), key=lambda x: x[1], reverse=True)]:
+        line = '%s\t%d\t%.7f\n' % (lexeme, lexeme_tc[lexeme], lexeme_idf[lexeme])
+        if lexeme in feature_idx_dc:
             selected_lexemes_report.write(line)
         else:
             rejected_lexemes_report.write(line)
-    save_pkl_file(feature_idx_df, data_dir / 'features.pkl')
-    del lexeme_tf
-    del lexeme_df
-    print('{:,} features selected in {}'.format(len(feature_idx_df), timer.lap_time))
+    save_pkl_file(feature_idx_dc, data_dir / 'features.pkl')
+    del lexeme_tc
+    del lexeme_dc
+    del lexeme_idf
+    print('{:,} features selected in {}'.format(len(feature_idx_dc), timer.lap_time))
     print()
     # Create bags of features
     print('Creating bags of features...')
-    eid_featbag = {}  # entity id => bag of features
+    eid_featbag = {}  # entity id => (total count of document, bag of features)
     for eid, lexbag in eid_lexbag.items():
-        featbag = {feature_idx_df[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_df}
+        featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
         if len(featbag):
-            prd_vars['total_counts'][eid] = sum(featbag.values())
             eid_featbag[eid] = featbag
     save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
     save_pkl_file(prd_vars, data_dir / 'vars.pkl')
-    del feature_idx_df
+    del feature_idx_dc
     print('{:,} initial entities'.format(len(eid_lexbag)))
     del eid_lexbag
-    print('{:,} vectors pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
+    print('{:,} feature bags pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
     print()
     # Clean forms
     print('Cleaning forms...')
