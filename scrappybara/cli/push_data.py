@@ -32,71 +32,64 @@ class FeatureSelector(object):
         return self.__feature_idx
 
 
-def create_vectors():
+def push_data():
     """Creates entitys' document sparse vectors"""
     timer = Timer()
     report_dir = cfg.REPORTS_DIR / 'create_vectors'
     data_dir = cfg.DATA_DIR / 'entities'
+    prd_vars = {'total_docs': 0, 'total_counts': {}}  # to calculate vectors on production
     # Read lexemes
-    print('Reading lexemes from bags...')
+    print('Reading bags of lexemes...')
     bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
-    lexeme_total_count = collections.Counter()  # lexeme => total count
-    lexeme_nb_docs = collections.Counter()  # lexeme => nb docs
-    eid_bag = {}  # entity id => bag of lexemes
+    lexeme_tf = collections.Counter()  # lexeme => term frequency (int)
+    lexeme_df = collections.Counter()  # lexeme => document frequency (int)
+    eid_lexbag = {}  # entity id => bag of lexemes
     total_docs = 0
     for file in files_in_dir(bags_path):
-        for eid, bag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
+        for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
             total_docs += 1
-            eid_bag[eid] = bag
-            for lexeme, count in bag:
-                lexeme_total_count[lexeme] += count
-                lexeme_nb_docs[lexeme] += 1
-    print('{:,} lexemes extracted in {}'.format(len(lexeme_nb_docs), timer.lap_time))
-    print()
-    # Calculate IDF scores
-    print('Calculating IDF scores...')
-    lexeme_idf = {lexeme: math.log(total_docs / nb_docs) for lexeme, nb_docs in lexeme_nb_docs.items()}
-    print('All IDF scores calculated in {}'.format(timer.lap_time))
+            eid_lexbag[eid] = lexbag
+            for lexeme, count in lexbag:
+                lexeme_tf[lexeme] += count
+                lexeme_df[lexeme] += 1
+    prd_vars['total_docs'] = total_docs
+    print('{:,} lexemes extracted in {}'.format(len(lexeme_df), timer.lap_time))
     print()
     # Select features
     print('Selecting features...')
     select = FeatureSelector()
-    feature_idx_idf = {}  # feature => (idx, idf)
-    for lexeme, idf in lexeme_idf.items():
-        idx = select(lexeme, lexeme_total_count[lexeme], idf)
+    feature_idx_df = {}  # feature => (idx, idf)
+    for lexeme, df in lexeme_df.items():
+        idx = select(lexeme, lexeme_tf[lexeme], df)
         if idx is not None:
-            feature_idx_idf[lexeme] = (idx, idf)
+            feature_idx_df[lexeme] = (idx, df)
     selected_lexemes_report = txt_file_writer(report_dir / 'accepted_lexemes.txt')
     rejected_lexemes_report = txt_file_writer(report_dir / 'rejected_lexemes.txt')
-    for lexeme, idf in [(lex, idf) for lex, idf in sorted(lexeme_idf.items(), key=lambda x: x[1])]:
-        line = '%s\t%d\t%.7f\n' % (lexeme, lexeme_total_count[lexeme], idf)
-        if lexeme in feature_idx_idf:
+    for lexeme, df in [(lex, df) for lex, df in sorted(lexeme_df.items(), key=lambda x: x[1])]:
+        line = '%s\t%d\t%.7f\n' % (lexeme, lexeme_tf[lexeme], math.log(total_docs / df))
+        if lexeme in feature_idx_df:
             selected_lexemes_report.write(line)
         else:
             rejected_lexemes_report.write(line)
-    save_pkl_file(feature_idx_idf, data_dir / 'feature_idx_idf.pkl')
-    del lexeme_nb_docs
-    del lexeme_total_count
-    del lexeme_idf
-    print('{:,} features selected in {}'.format(len(feature_idx_idf), timer.lap_time))
+    save_pkl_file(feature_idx_df, data_dir / 'features.pkl')
+    del lexeme_tf
+    del lexeme_df
+    print('{:,} features selected in {}'.format(len(feature_idx_df), timer.lap_time))
     print()
-    # Create sparse vectors
-    print('Calculating vectors...')
-    eid_vector = {}  # entity id => sparse vector
-    for eid, bag in eid_bag.items():
-        new_bag = [(lexeme, count) for lexeme, count in bag if lexeme in feature_idx_idf]
-        doc_total_count = sum([count for _, count in new_bag])
-        vector = {}  # feature idx => tf.idf
-        for lexeme, count in new_bag:
-            idx, idf = feature_idx_idf[lexeme]
-            vector[idx] = (count / doc_total_count) * idf
-        if len(vector):
-            eid_vector[eid] = vector
-    save_pkl_file(eid_vector, data_dir / 'eid_vector.pkl')
-    del feature_idx_idf
-    print('{:,} initial entities'.format(len(eid_bag)))
-    del eid_bag
-    print('{:,} vectors pushed to data in {}'.format(len(eid_vector), timer.lap_time))
+    # Create bags of features
+    print('Creating bags of features...')
+    eid_featbag = {}  # entity id => bag of features
+    for eid, lexbag in eid_lexbag.items():
+        featbag = {feature_idx_df[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_df}
+        if len(featbag):
+            prd_vars['total_counts'][eid] = sum(featbag.values())
+            eid_featbag[eid] = featbag
+    save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
+    save_pkl_file(prd_vars, data_dir / 'vars.pkl')
+    del feature_idx_df
+    print('{:,} initial entities'.format(len(eid_lexbag)))
+    del eid_lexbag
+    print('{:,} vectors pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
     print()
     # Clean forms
     print('Cleaning forms...')
@@ -109,10 +102,10 @@ def create_vectors():
             initial_nb_forms += 1
             form, _, titles = line.strip().split('\t')
             titles = eval(titles)
-            eids = {title_eid[title] for title in titles if title_eid[title] in eid_vector}
+            eids = {title_eid[title] for title in titles if title_eid[title] in eid_featbag}
             if len(eids):
                 form_eids[form] = eids
-    save_pkl_file(form_eids, data_dir / 'form_eids.pkl')
+    save_pkl_file(form_eids, data_dir / 'forms.pkl')
     print('{:,} initial forms'.format(initial_nb_forms))
     print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
     # All done

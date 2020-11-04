@@ -58,8 +58,9 @@ class Tower(object):
         return total_txts
 
 
-def extract_lexeme_bags(resources_dir, tower_id, nb_towers, batch_size):
-    """This process can be towered (one tower per GPU).
+def extract_bags(resources_dir, tower_id, nb_towers, batch_size):
+    """Extracts bags of lexemes from Wikipedia articles.
+    This process can be towered (one tower per GPU).
     Just indicate the total number of GPUs participating in the overall operation & the gpu_id for this tower.
     Towers (threads) are then run manually from CLI, one per GPU.
     Hint: don't forget to specify the visible GPU for one tower with "CUDA_VISIBLE_DEVICES=" in the environment.
