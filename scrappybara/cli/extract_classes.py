@@ -2,7 +2,8 @@ import pathlib
 import re
 
 import scrappybara.config as cfg
-from scrappybara.utils.files import txt_file_reader, txt_file_writer
+from scrappybara.exceptions import DestinationFolderNotEmtpyError
+from scrappybara.utils.files import txt_file_reader, txt_file_writer, files_in_dir
 from scrappybara.utils.mutables import append_to_dict_list
 from scrappybara.utils.timer import Timer
 
@@ -10,6 +11,8 @@ from scrappybara.utils.timer import Timer
 def extract_classes(resources_dir):
     """Extracts entity's classes from knowledge base"""
     reports_dir = cfg.REPORTS_DIR / 'extract_classes'
+    if len(files_in_dir(reports_dir)):
+        raise DestinationFolderNotEmtpyError(reports_dir)
     timer = Timer()
     print()
 

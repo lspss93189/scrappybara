@@ -19,10 +19,13 @@ class Pipeline(LexemePipeline):
                 sys.exit('Wrong data version. Please download again: "python3 -m scrappybara download".')
         super().__init__(batch_size)
         # Load data
-        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'form_eids.pkl')
-        feature_idx_dc = load_pkl_file(cfg.DATA_DIR / 'entities' / 'feature_idx_dc.pkl')
-        eid_featbag = load_pkl_file(cfg.DATA_DIR / 'entities' / 'eid_featbag.pkl')
+        form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'forms.pkl')
+        eid_featbag = load_pkl_file(cfg.DATA_DIR / 'entities' / 'bags.pkl')
         constants = load_pkl_file(cfg.DATA_DIR / 'entities' / 'vars.pkl')
+        feature_idx_dc = {}
+        for idx, feature_dc in enumerate(load_pkl_file(cfg.DATA_DIR / 'entities' / 'features.pkl')):
+            feature, dc = feature_dc
+            feature_idx_dc[feature] = (idx, dc)
         # Pipeline
         self.__link_entities = EntityLinker(form_eids, feature_idx_dc, eid_featbag, constants['total_docs'])
 

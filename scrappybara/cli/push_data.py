@@ -3,12 +3,11 @@ import math
 import re
 
 import scrappybara.config as cfg
+from scrappybara.exceptions import DestinationFolderNotEmtpyError
 from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, save_pkl_file, txt_file_reader, \
     files_in_dir
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
-from scrappybara.langmodel.language_model import LanguageModel
-from scrappybara.normalization.standardizer import Standardizer
 
 
 class FeatureSelector(object):
@@ -36,32 +35,21 @@ class FeatureSelector(object):
 
 def push_data():
     """Creates entitys' document sparse vectors"""
-    timer = Timer()
-    report_dir = cfg.REPORTS_DIR / 'push_data'
+    reports_dir = cfg.REPORTS_DIR / 'push_data'
     data_dir = cfg.DATA_DIR / 'entities'
+    if len(files_in_dir(data_dir)):
+        raise DestinationFolderNotEmtpyError(data_dir)
+    timer = Timer()
     prd_vars = {'total_docs': 0}  # constants needed to calculate vectors on production
     # Read lexemes
-    standardize = Standardizer(LanguageModel())
     print('Reading bags of lexemes...')
     bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
     lexeme_tc = collections.Counter()  # lexeme => term total count
     lexeme_dc = collections.Counter()  # lexeme => term document count (int)
-    eid_lexbag = {}  # entity id => bag of lexemes
     total_docs = 0
     for file in files_in_dir(bags_path):
         for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
             total_docs += 1
-
-            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            # Replace lexbag
-            new_bag = collections.Counter()
-            for lexeme, count in lexbag:
-                standard = standardize(lexeme)
-                new_bag[standard] += count
-            lexbag = new_bag.most_common()
-            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-            eid_lexbag[eid] = lexbag
             for lexeme, count in lexbag:
                 lexeme_tc[lexeme] += count
                 lexeme_dc[lexeme] += 1
@@ -78,15 +66,16 @@ def push_data():
         idx = select(lexeme, lexeme_tc[lexeme], lexeme_idf[lexeme])
         if idx is not None:
             feature_idx_dc[lexeme] = (idx, dc)
-    selected_lexemes_report = txt_file_writer(report_dir / 'accepted_lexemes.txt')
-    rejected_lexemes_report = txt_file_writer(report_dir / 'rejected_lexemes.txt')
+    selected_lexemes_report = txt_file_writer(reports_dir / 'accepted_lexemes.txt')
+    rejected_lexemes_report = txt_file_writer(reports_dir / 'rejected_lexemes.txt')
     for lexeme, dc in [(lex, df) for lex, df in sorted(lexeme_dc.items(), key=lambda x: x[1], reverse=True)]:
         line = '%s\t%d\t%.7f\n' % (lexeme, lexeme_tc[lexeme], lexeme_idf[lexeme])
         if lexeme in feature_idx_dc:
             selected_lexemes_report.write(line)
         else:
             rejected_lexemes_report.write(line)
-    save_pkl_file(feature_idx_dc, data_dir / 'feature_idx_dc.pkl')
+    save_pkl_file([(feature, idx_dc[1]) for feature, idx_dc in sorted(feature_idx_dc.items(), key=lambda x: x[1][0])],
+                  data_dir / 'features.pkl')
     del lexeme_tc
     del lexeme_dc
     del lexeme_idf
@@ -95,16 +84,16 @@ def push_data():
     # Create bags of features
     print('Creating bags of features...')
     eid_featbag = {}  # entity id => (total count of document, bag of features)
-    for eid, lexbag in eid_lexbag.items():
-        featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
-        if len(featbag):
-            eid_featbag[eid] = featbag
-    save_pkl_file(eid_featbag, data_dir / 'eid_featbag.pkl')
+    for file in files_in_dir(bags_path):
+        for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
+            featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
+            if len(featbag):
+                eid_featbag[eid] = featbag
+    save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
     save_pkl_file(prd_vars, data_dir / 'vars.pkl')
     del feature_idx_dc
-    print('{:,} initial entities'.format(len(eid_lexbag)))
-    del eid_lexbag
-    print('{:,} feature bags pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
+    print('{:,} initial number of entities'.format(total_docs))
+    print('{:,} entities with features pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
     print()
     # Clean forms
     print('Cleaning forms...')
@@ -120,11 +109,8 @@ def push_data():
             eids = {title_eid[title] for title in titles if title_eid[title] in eid_featbag}
             if len(eids):
                 form_eids[form] = eids
-    save_pkl_file(form_eids, data_dir / 'form_eids.pkl')
+    save_pkl_file(form_eids, data_dir / 'forms.pkl')
     print('{:,} initial forms'.format(initial_nb_forms))
     print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
     # All done
     print('All done in {}'.format(timer.total_time))
-
-
-push_data()

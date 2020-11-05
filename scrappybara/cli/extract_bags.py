@@ -3,13 +3,14 @@ import pathlib
 import re
 
 import scrappybara.config as cfg
+from scrappybara.exceptions import DestinationFolderNotEmtpyError
 from scrappybara.pipeline.lexeme_pipeline import LexemePipeline
 from scrappybara.utils.files import files_in_dir, bz2_file_reader, load_dict_from_txt_file, txt_file_writer, path_exists
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
 
-class Tower(object):
+class _Tower(object):
     """Meant to use a single GPU"""
 
     __deletes = [
@@ -32,7 +33,7 @@ class Tower(object):
         Incomplete reports are the last edited (one per tower).
         """
         total_txts = 0
-        report_path = cfg.REPORTS_DIR / 'extract_lexeme_bags' / (filename[:-4] + '.txt')
+        report_path = cfg.REPORTS_DIR / 'extract_bags' / (filename[:-4] + '.txt')
         if not path_exists(report_path):
             with txt_file_writer(report_path) as report:
                 for batch in files_in_dir(self.__data_path / filename):
@@ -60,11 +61,14 @@ class Tower(object):
 
 def extract_bags(resources_dir, tower_id, nb_towers, batch_size):
     """Extracts bags of lexemes from Wikipedia articles.
-    This process can be towered (one tower per GPU).
+    This process should be towered (one tower per GPU), since it can take several days.
     Just indicate the total number of GPUs participating in the overall operation & the gpu_id for this tower.
     Towers (threads) are then run manually from CLI, one per GPU.
     Hint: don't forget to specify the visible GPU for one tower with "CUDA_VISIBLE_DEVICES=" in the environment.
     """
+    reports_dir = cfg.REPORTS_DIR / 'extract_bags'
+    if len(files_in_dir(reports_dir)):
+        raise DestinationFolderNotEmtpyError(reports_dir)
     # Parse args
     tower_id = int(tower_id)
     nb_towers = int(nb_towers)
@@ -74,7 +78,7 @@ def extract_bags(resources_dir, tower_id, nb_towers, batch_size):
     re_filename = re.compile(r'enwiki-latest-pages-articles(\d+)\.xml-[p\d]+\.bz2')
     eid_title = load_dict_from_txt_file(cfg.REPORTS_DIR / 'extract_forms' / 'eid_title.txt', key_type=int)
     title_eid = reverse_dict(eid_title)
-    process = Tower(resources_dir, batch_size)
+    process = _Tower(resources_dir, batch_size)
     # Running tower
     print('Running tower %d...' % tower_id)
     print()
