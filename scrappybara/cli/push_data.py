@@ -163,7 +163,7 @@ def push_data():
     # -------------------------------------------------------------------------->
 
     print('Creating bags of features...')
-    eid_featbag = {}  # entity id => (total count of document, bag of features)
+    eid_featbag = {}  # entity id => bag of features
     for file in files_in_dir(bags_path):
         for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
             featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
@@ -175,7 +175,10 @@ def push_data():
     print('{:,} initial number of entities'.format(total_docs))
     print('{:,} entities with features pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
     print()
-    # Clean forms
+
+    # CLEAN FORMS
+    # -------------------------------------------------------------------------->
+
     print('Cleaning forms...')
     eid_title = load_dict_from_txt_file(cfg.REPORTS_DIR / 'extract_forms' / 'eid_title.txt', key_type=int)
     title_eid = reverse_dict(eid_title)
@@ -192,6 +195,7 @@ def push_data():
     save_pkl_file(form_eids, data_dir / 'forms.pkl')
     print('{:,} initial forms'.format(initial_nb_forms))
     print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
+    print()
 
     # ALL DONE
     # -------------------------------------------------------------------------->

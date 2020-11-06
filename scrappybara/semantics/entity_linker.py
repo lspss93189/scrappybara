@@ -11,14 +11,15 @@ from scrappybara.utils.mutables import append_to_dict_list
 
 class EntityLinker(object):
     __noun_tags = {Tag.NOUN, Tag.PROPN}
-    __linking_threshold = 0.0  # Minimum cosine required to link an entity
+    __linking_threshold = 0.1  # Minimum cosine required to link an entity
 
     def __init__(self, form_eids, feature_idx_dc, eid_bag, total_docs):
         self.__form_eids = form_eids
-        self.__feature_idx_dc = feature_idx_dc
+        self.__feature_idx = {feature: idx_dc[0] for feature, idx_dc in feature_idx_dc.items()}
+        self.__idx_dc = {idx: dc for idx, dc in feature_idx_dc.values()}
         self.__eid_bag = eid_bag
         self.__total_docs = total_docs
-        self.__eid_vector = {}
+        self.__eid_vector = {}  # option to precalculate vectors
 
     def __call__(self, node_dict, node_tree, vector):
         """Returns list of entities found in a single sentence"""
@@ -44,17 +45,15 @@ class EntityLinker(object):
         """Tries to link a form to an entity.
         Returns None if not possible.
         """
-        # Vectorize (updates cache)
-        vectors = []
+        # Vectorize all candidates
+        cand_vectors = []
         for eid in eids:
-            if eid in self.__eid_vector:
-                vectors.append(self.__eid_vector)
-            else:
-                vector = self.vectorize(self.__eid_bag[eid])
-                vectors.append(vector)
-                self.__eid_vector[eid] = vector
+            try:
+                cand_vectors.append(self.__eid_vector[eid])
+            except KeyError:
+                cand_vectors.append(self.__vectorize(self.__eid_bag[eid]))
         # Disambiguate
-        scores = [cosine(vector, self.__eid_vector[eid]) for eid in eids]
+        scores = [cosine(vector, cand_vector) for cand_vector in cand_vectors]
         if max(scores) > self.__linking_threshold:
             selected_eid = eids[np.argmax(scores)]
             return Entity(selected_eid, form)
@@ -79,21 +78,27 @@ class EntityLinker(object):
 
         _chunk_recursive(root)
         parts.sort(key=lambda x: x.idx)
-        for i in range(len(parts) - 1):
+        for i in range(len(parts)):
             form = ' '.join([node.standard for node in parts[i:]])
             if form in self.__form_eids:
-                eids = self.__form_eids[form]
+                eids = list(self.__form_eids[form])
                 entity = self.__link_form_to_entity(form, eids, vector)
                 if entity is not None:
                     root.entity = entity
                     return entity
         return None
 
-    def vectorize(self, bag):
+    def __vectorize(self, bag_idx_count):
         """Returns sparse vector, given a bag of features"""
-        total_count = sum(bag.values())
+        total_count = sum(bag_idx_count.values())
         vector = {}  # idx of feature => score tf.idf
-        for feature, count in [(f, c) for f, c in bag.items() if f in self.__feature_idx_dc]:
-            idx, dc = self.__feature_idx_dc[feature]
+        for idx, count in bag_idx_count.items():
+            dc = self.__idx_dc[idx]
             vector[idx] = (count / total_count) * math.log(self.__total_docs / dc)
         return vector
+
+    def vectorize(self, bag_feature_count):
+        """Production method: converts features into idxs"""
+        bag_idx_count = {self.__feature_idx[feature]: count for feature, count in bag_feature_count.items() if
+                         feature in self.__feature_idx}
+        return self.__vectorize(bag_idx_count)
