@@ -265,7 +265,7 @@ def extract_forms(resources_dir):
                             target = match.group(1)
                             if target in title_eid and title.lower() in target.lower():
                                 disambs.append((title, target))
-        # Writing reports
+        # Write reports
         form_titles_from_redirects = _write_source_target_tuples(redirects, report_redirects)
         form_titles_from_disambs = _write_source_target_tuples(disambs, report_disambs)
     print('{:,} forms extracted from redirects'.format(len(form_titles_from_redirects)))

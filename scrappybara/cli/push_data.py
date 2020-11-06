@@ -5,58 +5,135 @@ import re
 import scrappybara.config as cfg
 from scrappybara.exceptions import DestinationFolderNotEmtpyError
 from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, save_pkl_file, txt_file_reader, \
-    files_in_dir
+    files_in_dir, path_exists
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
 
 class FeatureSelector(object):
     __min_tc = 2  # minimum term's total count
-    __min_idf = 2.  # minimum term's inverse document frequency
+    __min_idf = 1.  # minimum term's inverse document frequency
 
-    __re_rejects = [
-        re.compile(r'https?://'),
+    # Accepted features
+    __re_accepted = [
+        re.compile(r'[a-z0-9\-_]+'),  # e.g. "house", "iphone9s", "covid-19", "formula_1"
+        re.compile(r'[a-z]+&[a-z]+'),  # e.g. "r&b"
+        re.compile(r'[a-z]\++'),  # e.g. "canal+"
+        re.compile(r'[a-z\']+'),  # e.g. "o'brien"
+        re.compile(r'([a-z]\.){2,}'),  # e.g. "u.s."
     ]
+
+    # Rejected features (tests done after __re_accepted)
+    __re_rejected = [
+        re.compile(r'[\d&\'.\-_].+'),  # Anything starting with a specific character
+        re.compile(r'[a-z]+\.'),  # e.g. "mr."
+    ]
+
+    __stopwords = set("""
+    
+        be become have set do
+        see make take use come receive give get go hold call say allow
+        include begin start end
+        
+        the
+        
+        external link
+        part world people period
+        
+        i ii iii iv v vi vii viii ix x
+        first second third fourth fifth sixth seventh eighth ninth tenth
+        eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth
+        fortieth fiftieth sixtieth seventieth eightieth ninetieth
+        
+        new known good same different other complete next
+        
+        time
+        monday tuesday wednesday thursday friday saturday sunday
+        january february march april may june july august september october november december
+        day week month year
+        
+        e.g. i.e. a.m. p.m.
+
+    """.split())
 
     def __init__(self):
         self.__feature_idx = -1  # feature idx
 
     def __call__(self, lexeme, tc, idf):
         """Returns feature & its idx if lexeme is selected, None otherwise"""
+        if not lexeme:
+            return None
         if tc < self.__min_tc:
             return None
         if idf < self.__min_idf:
             return None
-        if any([re.findall(pattern, lexeme) for pattern in self.__re_rejects]):
+        if lexeme in self.__stopwords:
+            return None
+        if not any([re.fullmatch(accepted, lexeme) for accepted in self.__re_accepted]):
+            return None
+        if any([re.fullmatch(rejected, lexeme) for rejected in self.__re_rejected]):
             return None
         self.__feature_idx += 1
         return self.__feature_idx
 
 
 def push_data():
-    """Creates entitys' document sparse vectors"""
+    """Creates entities' sparse vectors & pushes all entity linking resources to data.
+    First step "READ LEXEMES" is a backtrack milestone, delete the report if you want to run it again.
+    """
+    bags_path = cfg.REPORTS_DIR / 'extract_bags'
     reports_dir = cfg.REPORTS_DIR / 'push_data'
     data_dir = cfg.DATA_DIR / 'entities'
     if len(files_in_dir(data_dir)):
         raise DestinationFolderNotEmtpyError(data_dir)
     timer = Timer()
     prd_vars = {'total_docs': 0}  # constants needed to calculate vectors on production
-    # Read lexemes
-    print('Reading bags of lexemes...')
-    bags_path = cfg.REPORTS_DIR / 'extract_lexeme_bags'
-    lexeme_tc = collections.Counter()  # lexeme => term total count
-    lexeme_dc = collections.Counter()  # lexeme => term document count (int)
-    total_docs = 0
-    for file in files_in_dir(bags_path):
-        for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
-            total_docs += 1
-            for lexeme, count in lexbag:
-                lexeme_tc[lexeme] += count
-                lexeme_dc[lexeme] += 1
+
+    # READ LEXEMES
+    # -------------------------------------------------------------------------->
+
+    report_file = 'lexeme_tc_dc.txt'
+    report_total = 'total_docs.txt'
+
+    if path_exists(reports_dir / report_file):
+        print('Loading counts from "%s"...' % report_file)
+        lexeme_tc = {}
+        lexeme_dc = {}
+        with txt_file_reader(reports_dir / report_total) as report:
+            total_docs = int(report.read())
+        with txt_file_reader(reports_dir / report_file) as report:
+            for line in report:
+                try:
+                    lexeme, tc, dc = line.strip().split('\t')
+                    lexeme_tc[lexeme] = int(tc)
+                    lexeme_dc[lexeme] = int(dc)
+                except ValueError:
+                    continue
+    else:
+        print('Reading bags of lexemes...')
+        # Count lexemes
+        lexeme_tc = collections.Counter()  # lexeme => term total count
+        lexeme_dc = collections.Counter()  # lexeme => term document count (int)
+        total_docs = 0
+        for file in files_in_dir(bags_path):
+            for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
+                total_docs += 1
+                for lexeme, count in lexbag:
+                    lexeme_tc[lexeme] += count
+                    lexeme_dc[lexeme] += 1
+        # Write reports
+        with txt_file_writer(reports_dir / report_file) as report:
+            for lexeme, tc in sorted(lexeme_tc.items(), key=lambda x: x[0]):
+                report.write('%s\t%d\t%d\n' % (lexeme, tc, lexeme_dc[lexeme]))
+        with txt_file_writer(reports_dir / report_total) as report:
+            report.write('%d' % total_docs)
     prd_vars['total_docs'] = total_docs
     print('{:,} lexemes extracted in {}'.format(len(lexeme_dc), timer.lap_time))
     print()
-    # Select features
+
+    # SELECT FEATURES
+    # -------------------------------------------------------------------------->
+
     print('Selecting features...')
     select = FeatureSelector()
     feature_idx_dc = {}  # feature => (idx, idf)
@@ -81,7 +158,10 @@ def push_data():
     del lexeme_idf
     print('{:,} features selected in {}'.format(len(feature_idx_dc), timer.lap_time))
     print()
-    # Create bags of features
+
+    # CREATE BAG OF FEATURES
+    # -------------------------------------------------------------------------->
+
     print('Creating bags of features...')
     eid_featbag = {}  # entity id => (total count of document, bag of features)
     for file in files_in_dir(bags_path):
@@ -112,5 +192,8 @@ def push_data():
     save_pkl_file(form_eids, data_dir / 'forms.pkl')
     print('{:,} initial forms'.format(initial_nb_forms))
     print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
-    # All done
+
+    # ALL DONE
+    # -------------------------------------------------------------------------->
+
     print('All done in {}'.format(timer.total_time))
