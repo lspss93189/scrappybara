@@ -13,10 +13,10 @@ class EntityLinker(object):
     __noun_tags = {Tag.NOUN, Tag.PROPN}
     __linking_threshold = 0.1  # Minimum cosine required to link an entity
 
-    def __init__(self, form_eids, feature_idx_dc, eid_bag, total_docs):
+    def __init__(self, form_eids, feature_dc, eid_bag, total_docs):
         self.__form_eids = form_eids
-        self.__feature_idx = {feature: idx_dc[0] for feature, idx_dc in feature_idx_dc.items()}
-        self.__idx_dc = {idx: dc for idx, dc in feature_idx_dc.values()}
+        self.__feature_idx = {feature_dc[0]: idx for idx, feature_dc in enumerate(feature_dc)}
+        self.__idx_dc = {idx: feature_dc[1] for idx, feature_dc in enumerate(feature_dc)}
         self.__eid_bag = eid_bag
         self.__total_docs = total_docs
         self.__eid_vector = {}  # option to precalculate vectors
@@ -88,17 +88,17 @@ class EntityLinker(object):
                     return entity
         return None
 
-    def __vectorize(self, bag_idx_count):
+    def __vectorize(self, idx_count):
         """Returns sparse vector, given a bag of features"""
-        total_count = sum(bag_idx_count.values())
+        total_count = sum([count for _, count in idx_count])
         vector = {}  # idx of feature => score tf.idf
-        for idx, count in bag_idx_count.items():
+        for idx, count in idx_count:
             dc = self.__idx_dc[idx]
             vector[idx] = (count / total_count) * math.log(self.__total_docs / dc)
         return vector
 
     def vectorize(self, bag_feature_count):
         """Production method: converts features into idxs"""
-        bag_idx_count = {self.__feature_idx[feature]: count for feature, count in bag_feature_count.items() if
-                         feature in self.__feature_idx}
+        bag_idx_count = [(self.__feature_idx[feature], count) for feature, count in bag_feature_count if
+                         feature in self.__feature_idx]
         return self.__vectorize(bag_idx_count)

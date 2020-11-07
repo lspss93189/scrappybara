@@ -24,7 +24,7 @@ class LexemePipeline(ParsingPipeline):
     def __count_text_lexemes(self, standards, tags):
         """Counts lexemes in a single text"""
         lexemes = [(self._lemmatize(standard, tag)[0]) for standard, tag in zip(standards, tags) if tag in LEX_TAGS]
-        return collections.Counter(lexemes)
+        return collections.Counter(lexemes).most_common()
 
     def _extract_lexeme_bags(self, standard_lists, tag_lists, sent_ranges):
         """Returns a bag of lexemes (collections.Counter) corresponding to a portion of a text"""

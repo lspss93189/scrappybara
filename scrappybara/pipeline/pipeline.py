@@ -20,14 +20,11 @@ class Pipeline(LexemePipeline):
         super().__init__(batch_size)
         # Load data
         form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'forms.pkl')
+        feature_dc = load_pkl_file(cfg.DATA_DIR / 'entities' / 'features.pkl')
         eid_featbag = load_pkl_file(cfg.DATA_DIR / 'entities' / 'bags.pkl')
         constants = load_pkl_file(cfg.DATA_DIR / 'entities' / 'vars.pkl')
-        feature_idx_dc = {}
-        for idx, feature_dc in enumerate(load_pkl_file(cfg.DATA_DIR / 'entities' / 'features.pkl')):
-            feature, dc = feature_dc
-            feature_idx_dc[feature] = (idx, dc)
         # Pipeline
-        self.__link_entities = EntityLinker(form_eids, feature_idx_dc, eid_featbag, constants['total_docs'])
+        self.__link_entities = EntityLinker(form_eids, feature_dc, eid_featbag, constants['total_docs'])
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""

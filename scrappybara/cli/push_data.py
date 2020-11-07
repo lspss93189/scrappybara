@@ -31,26 +31,16 @@ class FeatureSelector(object):
 
     __stopwords = set("""
     
-        be become have set do
-        see make take use come receive give get go hold call say allow
-        include begin start end
+        be become have do
         
-        the
+        of the a
         
         external link
-        part world people period
         
         i ii iii iv v vi vii viii ix x
-        first second third fourth fifth sixth seventh eighth ninth tenth
-        eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth
-        fortieth fiftieth sixtieth seventieth eightieth ninetieth
         
-        new known good same different other complete next
-        
-        time
         monday tuesday wednesday thursday friday saturday sunday
         january february march april may june july august september october november december
-        day week month year
         
         e.g. i.e. a.m. p.m.
 
@@ -77,10 +67,16 @@ class FeatureSelector(object):
         return self.__feature_idx
 
 
-def push_data():
-    """Creates entities' sparse vectors & pushes all entity linking resources to data.
-    First step "READ LEXEMES" is a backtrack milestone, delete the report if you want to run it again.
+def push_data(min_features, max_features):
+    """Pushes all resources necessary for entity-linking to data.
+    First step "READ LEXEMES" saves its results: delete the report if you want to run it again.
+    Entities with less features than "min_features" are discarded.
+    Entities with more features than "max_features" retain their best features only.
     """
+    # Parse args
+    min_features = int(min_features)
+    max_features = int(max_features)
+    # Prep
     bags_path = cfg.REPORTS_DIR / 'extract_bags'
     reports_dir = cfg.REPORTS_DIR / 'push_data'
     data_dir = cfg.DATA_DIR / 'entities'
@@ -89,7 +85,7 @@ def push_data():
     timer = Timer()
     prd_vars = {'total_docs': 0}  # constants needed to calculate vectors on production
 
-    # READ LEXEMES
+    # READ BAGS OF LEXEMES
     # -------------------------------------------------------------------------->
 
     report_file = 'lexeme_tc_dc.txt'
@@ -128,6 +124,7 @@ def push_data():
         with txt_file_writer(reports_dir / report_total) as report:
             report.write('%d' % total_docs)
     prd_vars['total_docs'] = total_docs
+    save_pkl_file(prd_vars, data_dir / 'vars.pkl')
     print('{:,} lexemes extracted in {}'.format(len(lexeme_dc), timer.lap_time))
     print()
 
@@ -155,7 +152,6 @@ def push_data():
                   data_dir / 'features.pkl')
     del lexeme_tc
     del lexeme_dc
-    del lexeme_idf
     print('{:,} features selected in {}'.format(len(feature_idx_dc), timer.lap_time))
     print()
 
@@ -166,14 +162,22 @@ def push_data():
     eid_featbag = {}  # entity id => bag of features
     for file in files_in_dir(bags_path):
         for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
-            featbag = {feature_idx_dc[lexeme][0]: count for lexeme, count in lexbag if lexeme in feature_idx_dc}
-            if len(featbag):
-                eid_featbag[eid] = featbag
+            featbag = [(lex, feature_idx_dc[lex][0], count) for lex, count in lexbag if lex in feature_idx_dc]
+            if len(featbag) >= min_features:
+                if len(featbag) > max_features:
+                    # Prune features
+                    total_count = sum([count for _, _, count in featbag])
+                    idx_count_tfidf = [(idx, count, (count / total_count) * lexeme_idf[lex]) for lex, idx, count in
+                                       featbag]
+                    eid_featbag[eid] = [(idx, count) for idx, count, _ in
+                                        sorted(idx_count_tfidf, key=lambda x: x[2], reverse=True)[:max_features]]
+                else:
+                    eid_featbag[eid] = [(idx, count) for _, idx, count in featbag]
     save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
-    save_pkl_file(prd_vars, data_dir / 'vars.pkl')
+    del lexeme_idf
     del feature_idx_dc
     print('{:,} initial number of entities'.format(total_docs))
-    print('{:,} entities with features pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
+    print('{:,} entities pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
     print()
 
     # CLEAN FORMS

@@ -52,7 +52,7 @@ class _Tower(object):
                                     eids.append(title_eid[title])
                         bags = self.__pipe(texts)  # Lexemes are standardized
                         for idx, bag in enumerate(bags):
-                            report.write('%d\t%s\n' % (eids[idx], str(bag.most_common())))
+                            report.write('%d\t%s\n' % (eids[idx], str(bag)))
                         total_txts += len(bags)
                         print('\r{:,}'.format(total_txts), end='')
         return total_txts
