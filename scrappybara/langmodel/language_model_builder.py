@@ -8,6 +8,7 @@ from scrappybara.langmodel.ngram_store import NgramStore
 from scrappybara.langmodel.ngrams_extraction import extract_ngrams
 from scrappybara.preprocessing.sentencizer import Sentencizer
 from scrappybara.utils.files import save_pkl_file
+from scrappybara.utils.logger import Logger
 from scrappybara.utils.timer import Timer
 
 
@@ -21,6 +22,7 @@ class LanguageModelBuilder(object):
     __smoothing_methods = {'modified_kneser_ney', 'maximum_likelihood_estimation'}
 
     def __init__(self, max_order, smoothing, output_path):
+        Logger.info('BUILD LANGUAGE MODEL: max_order=%d, smoothing=%s' % (max_order, smoothing))
         if smoothing not in self.__smoothing_methods:
             raise ArgumentValueError('smoothing', smoothing, self.__smoothing_methods)
         if smoothing == 'modified_kneser_ney' and max_order < 2:
@@ -55,17 +57,16 @@ class LanguageModelBuilder(object):
                 for n in range(1, self.__max_order + 1):
                     for ngram in extract_ngrams(text_tokens, n):
                         store.make_ngram(ngram)
-            print('\rExtracting ngrams - texts processed: %d' % nb_texts, end='')
+            Logger.info('{:,} texts processed in {}'.format(nb_texts, timer.lap_time))
         # Calculate probas
-        print('\nCalculating probabilities...', end='')
         smoother = self.__smoother(store.ngrams, self.__max_order, cfg.NB_PROCESSES)()
-        print(' [DONE]')
         # Write ngrams
         for n in range(1, self.__max_order + 1):
-            self.__write_ngram_file(n, smoother.ngrams(n))
-        print('Total execution time: {}'.format(timer.total_time))
+            self.__write_ngram_file(n, smoother.ngrams(n), timer)
+        Logger.info('Probabilities calculated in {}'.format(timer.lap_time))
 
-    def __write_ngram_file(self, order, ngrams):
+    def __write_ngram_file(self, order, ngrams, timer):
         ngram_tuples = [(ngram.text, ngram.count, ngram.proba) for ngram in ngrams if ngram.proba > 0.0]
         save_pkl_file(ngram_tuples, self.__output_path / ('%d_grams.pkl' % order))
-        print('Wrote {:,} {}-grams'.format(len(ngrams), order))
+        Logger.info('Wrote {:,} {}-grams'.format(len(ngrams), order))
+        Logger.info('Total time: {}'.format(timer.total_time))

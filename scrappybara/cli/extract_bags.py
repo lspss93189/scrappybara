@@ -5,6 +5,7 @@ import re
 import scrappybara.config as cfg
 from scrappybara.pipeline.lexeme_pipeline import LexemePipeline
 from scrappybara.utils.files import files_in_dir, bz2_file_reader, load_dict_from_txt_file, txt_file_writer, path_exists
+from scrappybara.utils.logger import Logger
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
@@ -65,6 +66,7 @@ def extract_bags(resources_dir, tower_id, nb_towers, batch_size):
     Towers (threads) are then run manually from CLI, one per GPU.
     Hint: don't forget to specify the visible GPU for one tower with "CUDA_VISIBLE_DEVICES=" in the environment.
     """
+    Logger.info('EXTRACT BAGS OF LEXEMES: tower_id={}, batch_size={}'.format(tower_id, batch_size))
     # Parse args
     tower_id = int(tower_id)
     nb_towers = int(nb_towers)
@@ -76,22 +78,16 @@ def extract_bags(resources_dir, tower_id, nb_towers, batch_size):
     title_eid = reverse_dict(eid_title)
     process = _Tower(resources_dir, batch_size)
     # Running tower
-    print('Running tower %d...' % tower_id)
-    print()
     nb_texts_processed = 0
     for filename in [fn for fn in files_in_dir(resources_dir + '/dump') if fn.endswith('.bz2')]:
         file_match = re.fullmatch(re_filename, filename)
         file_nb = int(file_match.group(1))
         if file_nb % nb_towers != tower_id:
             continue
-        print('Processing "%s"...' % filename)
         nb_texts_processed_in_file = process(filename, title_eid)
         if nb_texts_processed_in_file:
             nb_texts_processed += nb_texts_processed_in_file
-            print()
-            print('Batch processed in {}'.format(timer.lap_time))
-            print('Cumulated: {:,}'.format(nb_texts_processed))
-        else:
-            print('File found: skiping')
-        print()
-    print('Total: {:,} articles processed in {}'.format(nb_texts_processed, timer.total_time))
+            Logger.info(
+                '{}: {:,} texts processed in {} (total={:,})'.format(filename, nb_texts_processed_in_file,
+                                                                     timer.lap_time, nb_texts_processed))
+    Logger.info('Total time: {}'.format(timer.total_time))

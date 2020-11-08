@@ -4,7 +4,7 @@ if __name__ == "__main__":
     from scrappybara.cli.extract_items import extract_items
     from scrappybara.cli.extract_forms import extract_forms
     from scrappybara.cli.extract_bags import extract_bags
-    from scrappybara.cli.push_data import push_data
+    from scrappybara.cli.push_el_data import push_el_data
     from scrappybara.cli.download import download
     from scrappybara.cli.build_langmodel import build_langmodel
 
@@ -14,7 +14,7 @@ if __name__ == "__main__":
         'extract_items': extract_items,
         'extract_forms': extract_forms,
         'extract_bags': extract_bags,
-        'push_data': push_data,
+        'push_el_data': push_el_data,
         'download': download,
     }
 

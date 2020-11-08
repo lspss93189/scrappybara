@@ -3,12 +3,13 @@ import pathlib
 
 import scrappybara.config as cfg
 from scrappybara.utils.files import bz2_file_reader, txt_file_writer
+from scrappybara.utils.logger import Logger
 from scrappybara.utils.timer import Timer
 
 
 def extract_items(resource_dir):
     """Extracts Wikidata items that have an English Wikipedia page"""
-    print('Extracting items...')
+    Logger.info('EXTRACT ITEMS')
     timer = Timer()
     items = []
     with bz2_file_reader(pathlib.Path(resource_dir) / 'latest-all.json.bz2') as data:
@@ -57,5 +58,5 @@ def extract_items(resource_dir):
     with txt_file_writer(cfg.REPORTS_DIR / 'extract_items' / 'items.txt') as report:
         for item in items:
             report.write('%s\n' % item)
-    print('\n')
-    print('{:,} items extracted in {}'.format(len(items), timer.total_time))
+    Logger.info('{:,} items extracted'.format(len(items)))
+    Logger.info('Total time: {}'.format(timer.total_time))

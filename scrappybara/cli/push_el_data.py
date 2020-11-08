@@ -6,6 +6,7 @@ import scrappybara.config as cfg
 from scrappybara.exceptions import DestinationFolderNotEmtpyError
 from scrappybara.utils.files import load_dict_from_txt_file, txt_file_writer, save_pkl_file, txt_file_reader, \
     files_in_dir, path_exists
+from scrappybara.utils.logger import Logger
 from scrappybara.utils.mutables import reverse_dict
 from scrappybara.utils.timer import Timer
 
@@ -67,12 +68,13 @@ class FeatureSelector(object):
         return self.__feature_idx
 
 
-def push_data(min_features, max_features):
+def push_el_data(min_features, max_features):
     """Pushes all resources necessary for entity-linking to data.
     First step "READ LEXEMES" saves its results: delete the report if you want to run it again.
     Entities with less features than "min_features" are discarded.
     Entities with more features than "max_features" retain their best features only.
     """
+    Logger.info('PUSH ENTITY-LINKER DATA: min_features={}, max_features={}'.format(min_features, max_features))
     # Parse args
     min_features = int(min_features)
     max_features = int(max_features)
@@ -92,7 +94,7 @@ def push_data(min_features, max_features):
     report_total = 'total_docs.txt'
 
     if path_exists(reports_dir / report_file):
-        print('Loading counts from "%s"...' % report_file)
+        # Load counts
         lexeme_tc = {}
         lexeme_dc = {}
         with txt_file_reader(reports_dir / report_total) as report:
@@ -105,8 +107,8 @@ def push_data(min_features, max_features):
                     lexeme_dc[lexeme] = int(dc)
                 except ValueError:
                     continue
+        Logger.info('{:,} lexemes loaded from "{}" in {}'.format(len(lexeme_dc), report_file, timer.lap_time))
     else:
-        print('Reading bags of lexemes...')
         # Count lexemes
         lexeme_tc = collections.Counter()  # lexeme => term total count
         lexeme_dc = collections.Counter()  # lexeme => term document count (int)
@@ -123,15 +125,13 @@ def push_data(min_features, max_features):
                 report.write('%s\t%d\t%d\n' % (lexeme, tc, lexeme_dc[lexeme]))
         with txt_file_writer(reports_dir / report_total) as report:
             report.write('%d' % total_docs)
+        Logger.info('{:,} lexemes extracted in {}'.format(len(lexeme_dc), timer.lap_time))
     prd_vars['total_docs'] = total_docs
     save_pkl_file(prd_vars, data_dir / 'vars.pkl')
-    print('{:,} lexemes extracted in {}'.format(len(lexeme_dc), timer.lap_time))
-    print()
 
     # SELECT FEATURES
     # -------------------------------------------------------------------------->
 
-    print('Selecting features...')
     select = FeatureSelector()
     feature_idx_dc = {}  # feature => (idx, idf)
     lexeme_idf = {}  # lexeme => inverse document frequency
@@ -152,13 +152,11 @@ def push_data(min_features, max_features):
                   data_dir / 'features.pkl')
     del lexeme_tc
     del lexeme_dc
-    print('{:,} features selected in {}'.format(len(feature_idx_dc), timer.lap_time))
-    print()
+    Logger.info('{:,} features selected in {}'.format(len(feature_idx_dc), timer.lap_time))
 
     # CREATE BAG OF FEATURES
     # -------------------------------------------------------------------------->
 
-    print('Creating bags of features...')
     eid_featbag = {}  # entity id => bag of features
     for file in files_in_dir(bags_path):
         for eid, lexbag in load_dict_from_txt_file(bags_path / file, key_type=int, value_type=eval).items():
@@ -176,14 +174,12 @@ def push_data(min_features, max_features):
     save_pkl_file(eid_featbag, data_dir / 'bags.pkl')
     del lexeme_idf
     del feature_idx_dc
-    print('{:,} initial number of entities'.format(total_docs))
-    print('{:,} entities pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
-    print()
+    Logger.info('{:,} initial number of entities'.format(total_docs))
+    Logger.info('{:,} entities pushed to data in {}'.format(len(eid_featbag), timer.lap_time))
 
     # CLEAN FORMS
     # -------------------------------------------------------------------------->
 
-    print('Cleaning forms...')
     eid_title = load_dict_from_txt_file(cfg.REPORTS_DIR / 'extract_forms' / 'eid_title.txt', key_type=int)
     title_eid = reverse_dict(eid_title)
     form_eids = {}  # form => set of entity IDs
@@ -197,11 +193,10 @@ def push_data(min_features, max_features):
             if len(eids):
                 form_eids[form] = eids
     save_pkl_file(form_eids, data_dir / 'forms.pkl')
-    print('{:,} initial forms'.format(initial_nb_forms))
-    print('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
-    print()
+    Logger.info('{:,} initial forms'.format(initial_nb_forms))
+    Logger.info('{:,} forms pushed to data in {}'.format(len(form_eids), timer.lap_time))
 
     # ALL DONE
     # -------------------------------------------------------------------------->
 
-    print('All done in {}'.format(timer.total_time))
+    Logger.info('Total time: {}'.format(timer.total_time))
