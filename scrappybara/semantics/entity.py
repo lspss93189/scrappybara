@@ -1,7 +1,7 @@
 class Entity(object):
 
     def __init__(self, entity_id, form):
-        self.eid = entity_id
+        self.id = entity_id
         self.form = form
         self.uri = 'https://www.wikidata.org/wiki/Q%d' % entity_id
 

@@ -51,9 +51,9 @@ class EntityLinker(object):
             try:
                 cand_vectors.append(self.__eid_vector[eid])
             except KeyError:
-                vector = self.__vectorize(self.__eid_bag[eid])
-                cand_vectors.append(vector)
-                self.__eid_vector[eid] = vector
+                cand_vector = self.__vectorize(self.__eid_bag[eid])
+                cand_vectors.append(cand_vector)
+                self.__eid_vector[eid] = cand_vector
         # Disambiguate
         scores = [cosine(vector, cand_vector) for cand_vector in cand_vectors]
         if max(scores) > self.__linking_threshold:

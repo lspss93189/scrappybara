@@ -52,6 +52,6 @@ class Pipeline(LexemePipeline):
         docs = []
         for idx, start_end in enumerate(sent_ranges):
             start, end = start_end
-            entities = [entity for entities in entity_lists[start, end] for entity in entities]
+            entities = [entity for entities in entity_lists[start: end] for entity in entities]
             docs.append(Document(entities))
         return docs

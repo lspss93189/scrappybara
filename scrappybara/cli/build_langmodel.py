@@ -35,6 +35,3 @@ def build_langmodel(resource_dir):
     # Build LM
     build_lm = LanguageModelBuilder(max_order, 'modified_kneser_ney', data_dir)
     build_lm(iter(texts))
-
-
-build_langmodel('/media/data/scrappybara')
