@@ -19,7 +19,7 @@ class EntityLinker(object):
         self.__idx_dc = {idx: feature_dc[1] for idx, feature_dc in enumerate(feature_dc)}
         self.__eid_bag = eid_bag
         self.__total_docs = total_docs
-        self.__eid_vector = {}  # option to precalculate vectors
+        self.__eid_vector = {}  # Cache of vectors
 
     def __call__(self, node_dict, node_tree, vector):
         """Returns list of entities found in a single sentence"""
@@ -51,7 +51,9 @@ class EntityLinker(object):
             try:
                 cand_vectors.append(self.__eid_vector[eid])
             except KeyError:
-                cand_vectors.append(self.__vectorize(self.__eid_bag[eid]))
+                vector = self.__vectorize(self.__eid_bag[eid])
+                cand_vectors.append(vector)
+                self.__eid_vector[eid] = vector
         # Disambiguate
         scores = [cosine(vector, cand_vector) for cand_vector in cand_vectors]
         if max(scores) > self.__linking_threshold:

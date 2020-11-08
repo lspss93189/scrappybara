@@ -10,8 +10,8 @@ from scrappybara.utils.multithreading import run_multithreads
 class LexemePipeline(ParsingPipeline):
     """Extracts lexeme bags from raw texts"""
 
-    def __init__(self, batch_size=128):
-        super().__init__(batch_size)
+    def __init__(self, batch_size=128, verbose=True):
+        super().__init__(batch_size, verbose)
         self.__tag = Tagger(self._charset, self._wordset, self._ptags_model, batch_size)
 
     def __call__(self, texts):

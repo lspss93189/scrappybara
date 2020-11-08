@@ -17,7 +17,9 @@ class ParsingPipeline(LabelledSentencePipeline):
 
     __splitters = {':', '"', ';', '(', ')', '[', ']', '{', '}', '—'}  # Used to split sentences again
 
-    def __init__(self, batch_size=128):
+    def __init__(self, batch_size=128, verbose=True):
+        if verbose:
+            print('Preparing Parser... ', end='')
         lm = LanguageModel()
         super().__init__(lm)
         # Load data
@@ -30,6 +32,8 @@ class ParsingPipeline(LabelledSentencePipeline):
         self.__standardize = Standardizer(lm)
         self.__parse = Parser(self._charset, self._wordset, self._ptags_model, pdeps_model, trans_model, batch_size)
         self._sentencize = Sentencizer()
+        if verbose:
+            print('[DONE]')
 
     def __call__(self, input_sentence):
         """Parses a single sentence.

@@ -12,19 +12,23 @@ from scrappybara.utils.multithreading import run_multithreads
 class Pipeline(LexemePipeline):
     """Production pipeline"""
 
-    def __init__(self, batch_size=128):
+    def __init__(self, batch_size=128, verbose=True):
         # Check data versioning
         with txt_file_reader(cfg.DATA_DIR / 'version.txt') as txt_file:
             if txt_file.read() != cfg.DATA_VERSION:
                 sys.exit('Wrong data version. Please download again: "python3 -m scrappybara download".')
-        super().__init__(batch_size)
+        super().__init__(batch_size, verbose)
         # Load data
+        if verbose:
+            print('Preparing Entity Linker... ', end='')
         form_eids = load_pkl_file(cfg.DATA_DIR / 'entities' / 'forms.pkl')
         feature_dc = load_pkl_file(cfg.DATA_DIR / 'entities' / 'features.pkl')
         eid_featbag = load_pkl_file(cfg.DATA_DIR / 'entities' / 'bags.pkl')
         constants = load_pkl_file(cfg.DATA_DIR / 'entities' / 'vars.pkl')
         # Pipeline
         self.__link_entities = EntityLinker(form_eids, feature_dc, eid_featbag, constants['total_docs'])
+        if verbose:
+            print('[DONE]')
 
     def __call__(self, texts):
         """Processes all texts in memory & returns a list of documents"""

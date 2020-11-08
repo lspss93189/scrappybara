@@ -10,7 +10,7 @@ import scrappybara as sb
 pipe = sb.Pipeline()
 docs = pipe(['I went to Seoul, South Korea.'])
 for entity in docs[0].entities:
-    print([entity.id, entity.uri, entity.form, entity.start_idx, entity.end_idx])
+    print([entity.id, entity.uri, entity.title, entity.start_idx, entity.end_idx])
 ```
 
 Output:

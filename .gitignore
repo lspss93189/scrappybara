@@ -22,3 +22,4 @@ scrappybara/data/
 build/
 dist/
 scrappybara.egg-info/
+*.zip
