@@ -3,7 +3,6 @@ import sys
 import scrappybara.config as cfg
 from scrappybara.pipeline.document import Document
 from scrappybara.pipeline.lexeme_pipeline import LexemePipeline
-from scrappybara.pipeline.sentence import Sentence
 from scrappybara.semantics.entity_linker import EntityLinker
 from scrappybara.utils.files import txt_file_reader, load_pkl_file
 from scrappybara.utils.multithreading import run_multithreads
@@ -51,9 +50,8 @@ class Pipeline(LexemePipeline):
     @staticmethod
     def __create_docs(entity_lists, sent_ranges):
         docs = []
-        for text_idx, start_end in enumerate(sent_ranges):
-            sents = []
-            for sent_idx in range(*start_end):
-                sents.append(Sentence(entity_lists[sent_idx]))
-            docs.append(Document(sents))
+        for idx, start_end in enumerate(sent_ranges):
+            start, end = start_end
+            entities = [entity for entities in entity_lists[start, end] for entity in entities]
+            docs.append(Document(entities))
         return docs

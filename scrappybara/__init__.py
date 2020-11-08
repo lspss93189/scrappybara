@@ -1,7 +1,6 @@
 """Import core names of Scrappybara.
 import scrappybara as sb
 """
-from scrappybara.pipeline.sentence import Sentence
 from scrappybara.pipeline.document import Document
 from scrappybara.pipeline.pipeline import Pipeline
 
