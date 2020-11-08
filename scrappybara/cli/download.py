@@ -17,10 +17,17 @@ class DownloadProgressBar(tqdm.tqdm):
         self.update(b * bsize - self.n)
 
 
-def download():
+def download(bundle):
     """Downloads & unzips data files according to current version of Scrappybara"""
     filename = cfg.HOME_DIR / 'data.zip'
-    url = 'https://scrappybara.s3.ap-northeast-2.amazonaws.com/data-%s.zip' % cfg.DATA_VERSION
+    if bundle == 'core':
+        url = 'https://github.com/ericperriard/scrappybara/releases/download/v%s/data-%s-core.zip' % (
+            cfg.APP_VERSION, cfg.DATA_VERSION)
+    elif bundle == 'full':
+        url = 'https://github.com/ericperriard/scrappybara/releases/download/v%s/data-%s-full.zip' % (
+            cfg.APP_VERSION, cfg.DATA_VERSION)
+    else:
+        sys.exit('Argument not recognized: can only download "core" or "full" data.')
     # Check if file exists
     if requests.head(url).status_code != requests.codes.ok:
         sys.exit('The data corresponding to this version of Scrappybara is not available anymore. ' +
