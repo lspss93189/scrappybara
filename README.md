@@ -15,8 +15,8 @@ Scrappybara specializes in Computational Semantics:
 
 - **Entity Linking**:
     - Named-entity recognition
-    - Named-entity disambiguation of over 250K forms
-    - Linking to over 4,8M wikidata URIs
+    - Named-entity disambiguation for 5.6 million forms
+    - Linking to 1.5 million Wikidata URIs
 
 ## Documentation
 

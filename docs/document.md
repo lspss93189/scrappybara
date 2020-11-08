@@ -1,6 +1,6 @@
 # Document
 
-> Class that represents an output of the Pipeline.
+> Class: output of the Pipeline.
 
 ## Example
 
@@ -16,8 +16,8 @@ Output:
 
 ```terminal
 [
-    ((17, 28), 'South Korea', 'https://www.wikidata.org/wiki/Q884'),
-    ((10, 15), 'Seoul', 'https://www.wikidata.org/wiki/Q8684')
+    ('South Korea', 'https://www.wikidata.org/wiki/Q884'),
+    ('Seoul', 'https://www.wikidata.org/wiki/Q8684')
 ]
 ```
 
@@ -27,4 +27,4 @@ Output:
 
 `Document.entities`
 
-Returns a list of [Entities](entity.md): all named-entities found in the document.
+Returns a list of [Entities](entity.md): named-entities found in the entire document, linked to an URI. 
